@@ -109,12 +109,4 @@ namespace Submarines.Runtime
             EchoPos = anchor + _echoDir * _echoRange;
         }
     }
-
-    internal struct PingEvent
-    {
-        internal Vector3 Pos;
-        internal Unit Pinger;
-        internal FactionHQ Faction;
-        internal float Time;
-    }
 }
