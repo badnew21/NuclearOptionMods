@@ -24,6 +24,10 @@ namespace Submarines.Bootstrap
         private static ICollection<AircraftDefinition> _shipDefs;
         private static bool _registered;
 
+        // Hangar.availableAircraft is non-public in the game assembly (BOTE builds against a
+        // publicized copy), so go through reflection.
+        private static readonly FieldInfo HangarAircraft = AccessTools.Field(typeof(Hangar), "availableAircraft");
+
         internal static bool Present { get { return _modAssetsType != null; } }
 
         /// <summary>Called from Awake. BOTE initialises after Blueprinter is ready and fires ModAssets.OnInitialize.</summary>
@@ -170,16 +174,24 @@ namespace Submarines.Bootstrap
                 if (dh != null && !hangars.Contains(dh))
                     hangars.Add(dh);
             }
+            if (HangarAircraft == null)
+            {
+                SubmarinesPlugin.Log.LogWarning("Hangar.availableAircraft not found; player subs can't be offered at docks.");
+                return;
+            }
             foreach (Hangar h in hangars)
             {
-                if (h == null || h.availableAircraft == null)
+                if (h == null)
+                    continue;
+                AircraftDefinition[] list = HangarAircraft.GetValue(h) as AircraftDefinition[];
+                if (list == null)
                     continue;
                 bool isDock = dock != null && dock.unitPrefab != null && h.transform.IsChildOf(dock.unitPrefab.transform);
-                if (Array.IndexOf(h.availableAircraft, sub) >= 0)
+                if (Array.IndexOf(list, sub) >= 0)
                     continue;
-                if (!isDock && Array.IndexOf(h.availableAircraft, donor) < 0)
+                if (!isDock && Array.IndexOf(list, donor) < 0)
                     continue;
-                h.availableAircraft = h.availableAircraft.AddToArray(sub);
+                HangarAircraft.SetValue(h, list.AddToArray(sub));
                 added++;
             }
             SubmarinesPlugin.Log.LogInfo(sub.unitName + " offered at " + added + " hangar(s)/dock(s).");
