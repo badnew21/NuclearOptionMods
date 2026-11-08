@@ -33,7 +33,7 @@ namespace Submarines.Runtime
 
         internal ICollection<SonarContact> Contacts { get { return _contacts.Values; } }
 
-        internal static SonarArray Attach(Unit owner, Submarine sub)
+        internal static SonarArray Attach(Unit owner, Submarine sub, int aswTorpedoes)
         {
             SonarArray a = owner.GetComponent<SonarArray>();
             if (a == null)
@@ -49,7 +49,7 @@ namespace Submarines.Runtime
             {
                 a.SelfNoiseBase = 58f;   // hull sonar on a noisy surface combatant
                 a.Threshold = 10f;
-                a.AswTorpedoes = SubConfig.SurfaceAsw.Value ? SubConfig.SurfaceAswTorpedoes.Value : 0;
+                a.AswTorpedoes = aswTorpedoes;
             }
             a._nextScan = Time.time + Random.Range(0f, ScanInterval);
             a._nextAutoPing = Time.time + Random.Range(10f, 30f);
@@ -123,7 +123,7 @@ namespace Submarines.Runtime
             // Real hulls
             foreach (Unit u in UnitRegistry.allUnits)
             {
-                if (u == null || u == Owner || u.disabled || !(u is Ship))
+                if (u == null || u == Owner || u.disabled || !Bootstrap.BoteBridge.IsVessel(u))
                     continue;
                 if (myHq != null && u.NetworkHQ == myHq)
                     continue;

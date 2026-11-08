@@ -22,13 +22,13 @@ namespace Submarines.Bootstrap
     {
         private static bool _done;
         private static GameObject _holder;
-        private static readonly Dictionary<string, ShipDefinition> Defs = new Dictionary<string, ShipDefinition>(StringComparer.Ordinal);
+        private static readonly Dictionary<string, UnitDefinition> Defs = new Dictionary<string, UnitDefinition>(StringComparer.Ordinal);
 
         private static readonly FieldInfo UnitDefDisabled = AccessTools.Field(typeof(UnitDefinition), "disabled");
         private static readonly FieldInfo SpawnedFromInstantiate =
             AccessTools.Field(typeof(NetworkIdentity), "<SpawnedFromInstantiate>k__BackingField");
 
-        internal static IEnumerable<ShipDefinition> Definitions { get { return Defs.Values; } }
+        internal static IEnumerable<UnitDefinition> Definitions { get { return Defs.Values; } }
 
         internal static void OnEncyclopediaLoaded(Encyclopedia enc)
         {
@@ -82,11 +82,25 @@ namespace Submarines.Bootstrap
             if (UnitDefDisabled != null)
                 UnitDefDisabled.SetValue(def, false);
 
-            GameObject prefab = ClonePrefab(donor.unitPrefab, spec.JsonKey);
+            if (!BuildSubPrefab(def, donor.unitPrefab, spec, spec.JsonKey))
+                return;
+
+            if (enc.ships == null)
+                enc.ships = new List<ShipDefinition>();
+            enc.ships.Add(def);
+            AddToLookups(enc, def);
+            SubmarinesPlugin.Log.LogInfo("Registered " + spec.UnitName + " (" + spec.JsonKey + ") on the '" +
+                                         donor.unitName + "' hull [" + donor.jsonKey + "].");
+        }
+
+        /// <summary>Clone the donor prefab, point it at the new definition and give it the sub model.</summary>
+        internal static bool BuildSubPrefab(UnitDefinition def, GameObject donorPrefab, SubSpec spec, string key)
+        {
+            GameObject prefab = ClonePrefab(donorPrefab, key);
             if (prefab == null)
             {
-                SubmarinesPlugin.Log.LogError("Could not clone prefab for " + spec.JsonKey);
-                return;
+                SubmarinesPlugin.Log.LogError("Could not clone prefab for " + key);
+                return false;
             }
             def.unitPrefab = prefab;
             Visual.HullPlan plan = Visual.SubVisual.PlanFor(spec);
@@ -97,11 +111,12 @@ namespace Submarines.Bootstrap
             Unit unit = prefab.GetComponent<Unit>();
             if (unit != null)
                 unit.definition = def;
+            return true;
+        }
 
-            if (enc.ships == null)
-                enc.ships = new List<ShipDefinition>();
-            enc.ships.Add(def);
-
+        /// <summary>Encyclopedia lookup tables, network index and mass cache for a new definition.</summary>
+        internal static void AddToLookups(Encyclopedia enc, UnitDefinition def)
+        {
             if (Encyclopedia.Lookup == null)
                 Encyclopedia.Lookup = new Dictionary<string, UnitDefinition>(StringComparer.Ordinal);
             Encyclopedia.Lookup[def.jsonKey] = def;
@@ -114,9 +129,7 @@ namespace Submarines.Bootstrap
             try { def.CacheMass(); }
             catch (Exception ex) { SubmarinesPlugin.Log.LogWarning("CacheMass failed for " + def.jsonKey + ": " + ex.Message); }
 
-            Defs[spec.JsonKey] = def;
-            SubmarinesPlugin.Log.LogInfo("Registered " + spec.UnitName + " (" + spec.JsonKey + ") on the '" +
-                                         donor.unitName + "' hull [" + donor.jsonKey + "].");
+            Defs[def.jsonKey] = def;
         }
 
         private static GameObject ClonePrefab(GameObject source, string key)
@@ -182,7 +195,7 @@ namespace Submarines.Bootstrap
                 return;
             foreach (UnityEngine.Object mgr in Resources.FindObjectsOfTypeAll(com))
             {
-                foreach (ShipDefinition def in Defs.Values)
+                foreach (UnitDefinition def in Defs.Values)
                 {
                     if (def == null || def.unitPrefab == null)
                         continue;
@@ -238,6 +251,12 @@ namespace Submarines.Bootstrap
         private static bool Usable(ShipDefinition s)
         {
             return s != null && s.unitPrefab != null && SubSpec.ForKey(s.jsonKey) == null;
+        }
+
+        internal static void MarkEnabled(UnitDefinition def)
+        {
+            if (UnitDefDisabled != null)
+                UnitDefDisabled.SetValue(def, false);
         }
 
         internal static bool IsExcludedHull(UnitDefinition s)

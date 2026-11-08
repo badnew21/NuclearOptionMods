@@ -3,3 +3,5 @@ obj/
 *.user
 .vs/
 Directory.Build.props
+Submarines/tools/patchcheck/bin/
+Submarines/tools/patchcheck/obj/

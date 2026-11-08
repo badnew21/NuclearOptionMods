@@ -11,6 +11,9 @@ namespace Submarines
     {
         internal SubRole Role;
         internal string JsonKey;
+
+        /// <summary>jsonKey of the player-drivable version registered through BOTE.</summary>
+        internal string PlayerJsonKey;
         internal string UnitName;
         internal string Code;
         internal string Description;
@@ -31,6 +34,7 @@ namespace Submarines
         {
             Role = SubRole.Attack,
             JsonKey = "SUB_SSN_Kestrel",
+            PlayerJsonKey = "BOTE_SUB_SSN_Kestrel",
             UnitName = "Kestrel-class SSN",
             Code = "SSN",
             Description =
@@ -47,6 +51,7 @@ namespace Submarines
         {
             Role = SubRole.Ballistic,
             JsonKey = "SUB_SSBN_Leviathan",
+            PlayerJsonKey = "BOTE_SUB_SSBN_Leviathan",
             UnitName = "Leviathan-class SSBN",
             Code = "SSBN",
             Description =
@@ -63,9 +68,9 @@ namespace Submarines
         {
             if (jsonKey == null)
                 return null;
-            if (jsonKey == Attack.JsonKey)
+            if (jsonKey == Attack.JsonKey || jsonKey == Attack.PlayerJsonKey)
                 return Attack;
-            if (jsonKey == Ballistic.JsonKey)
+            if (jsonKey == Ballistic.JsonKey || jsonKey == Ballistic.PlayerJsonKey)
                 return Ballistic;
             return null;
         }

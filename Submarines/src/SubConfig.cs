@@ -71,6 +71,11 @@ namespace Submarines
         internal static ConfigEntry<bool> ShowTruth;
         internal static ConfigEntry<bool> VerboseLog;
 
+        // BOTE integration
+        internal static ConfigEntry<bool> BoteEnabled;
+        internal static ConfigEntry<string> BoteAttackDonorKeys;
+        internal static ConfigEntry<string> BoteBallisticDonorKeys;
+
         // Model / multiplayer
         internal static ConfigEntry<float> ModelVerticalOffset;
 
@@ -153,6 +158,12 @@ namespace Submarines
             PingKey = cfg.Bind("UI", "PingKey", KeyCode.Pause, "Send an active sonar ping (reveals you).");
             WarheadKey = cfg.Bind("UI", "WarheadKey", KeyCode.Backslash, "SSBN: cycle warhead (conventional / nuclear / nuclear only).");
             ShowTruth = cfg.Bind("UI", "ShowTruth", false, "Debug: mark false contacts on the display.");
+            BoteEnabled = cfg.Bind("BOTE", "Enabled", true,
+                "If Boscali Ocean Training Exercise is installed, add player-drivable versions of both subs to its docks and hangars.");
+            BoteAttackDonorKeys = cfg.Bind("BOTE", "AttackSubDonor", "shard,corvette,argus,frigate",
+                "Keywords for the BOTE player ship the drivable SSN is built from (handling, HUD, weapons). The log lists BOTE's ships.");
+            BoteBallisticDonorKeys = cfg.Bind("BOTE", "BallisticSubDonor", "dynamo,destroyer,argus,frigate",
+                "Keywords for the BOTE player ship the drivable SSBN is built from.");
             ModelVerticalOffset = cfg.Bind("Model", "VerticalOffset", 0f,
                 "Raise (+) or lower (-) the submarine model relative to the donor hull's waterline, if it floats too high or low when surfaced.");
             VerboseLog = cfg.Bind("UI", "VerboseLog", false, "Log sonar and weapon events.");

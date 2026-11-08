@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- CI tool: verifies every [HarmonyPatch] in Submarines.dll against the real game assemblies. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="8.0.0" />
+  </ItemGroup>
+</Project>

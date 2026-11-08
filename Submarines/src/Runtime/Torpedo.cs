@@ -186,7 +186,7 @@ namespace Submarines.Runtime
 
             foreach (Unit u in UnitRegistry.allUnits)
             {
-                if (u == null || u.disabled || !(u is Ship) || !Net.Hostile(Faction, u.NetworkHQ))
+                if (u == null || u.disabled || !Bootstrap.BoteBridge.IsVessel(u) || !Net.Hostile(Faction, u.NetworkHQ))
                     continue;
                 Vector3 p = Geo.GlobalOf(u);
                 float lvl;

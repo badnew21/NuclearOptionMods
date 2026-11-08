@@ -96,6 +96,9 @@ jobs:
       - name: Build
         run: dotnet build Submarines/Submarines.csproj -c Release -p:NuclearOptionRoot="$NuclearOptionRoot" -p:DeployToGame=false
 
+      - name: Verify Harmony patches against the game
+        run: dotnet run --project Submarines/tools/patchcheck/PatchCheck.csproj -c Release -- "$NuclearOptionRoot" Submarines/bin/Release/Submarines.dll
+
       - name: Package
         id: pkg
         run: |

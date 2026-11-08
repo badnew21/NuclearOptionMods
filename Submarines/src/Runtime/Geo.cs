@@ -22,6 +22,20 @@ namespace Submarines.Runtime
         /// <summary>Depth of a global-space point.</summary>
         internal static float DepthGlobal(Vector3 global) { return DepthLocal(ToLocal(global)); }
 
+        /// <summary>The unit's physics body (ships and BOTE player vessels both have one).</summary>
+        internal static Rigidbody BodyOf(Unit u)
+        {
+            if (u == null)
+                return null;
+            Ship s = u as Ship;
+            if (s != null && s.rb != null)
+                return s.rb;
+            Aircraft a = u as Aircraft;
+            if (a != null && a.rb != null)
+                return a.rb;
+            return u.GetComponent<Rigidbody>();
+        }
+
         internal static float DepthOf(Unit u) { return u != null ? DepthLocal(u.transform.position) : 0f; }
 
         /// <summary>Water depth under a local point. Returns 5000 for open ocean with no seabed hit.</summary>

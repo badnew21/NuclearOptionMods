@@ -83,9 +83,21 @@ namespace Submarines.UI
             return Mine[_index];
         }
 
+        private static Submarine _lastPiloted;
+
         private static void CollectMine()
         {
             Mine.Clear();
+            // The boat you're driving (BOTE) always comes first and is selected when you board it.
+            Aircraft mine;
+            Submarine piloted = GameManager.GetLocalAircraft(out mine) && mine != null ? mine.GetComponent<Submarine>() : null;
+            if (piloted != null && !piloted.Ship.disabled)
+                Mine.Add(piloted);
+            if (piloted != _lastPiloted)
+            {
+                _lastPiloted = piloted;
+                _index = 0;
+            }
             FactionHQ local = null;
             Player p;
             if (GameManager.GetLocalPlayer(out p) && p != null)
@@ -96,7 +108,7 @@ namespace Submarines.UI
                 Submarine s = subs[i];
                 if (s == null || s.Ship == null || s.Ship.disabled)
                     continue;
-                if (local == null || s.Ship.NetworkHQ == local)
+                if ((local == null || s.Ship.NetworkHQ == local) && s != piloted)
                     Mine.Add(s);
             }
         }

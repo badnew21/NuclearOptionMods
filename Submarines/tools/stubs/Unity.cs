@@ -8,11 +8,11 @@ public class Object { public string name; public HideFlags hideFlags; public int
  public static implicit operator bool(Object o){return o!=null;} }
 public enum HideFlags{None}
 public class ScriptableObject:Object{}
-public class Component:Object{ public Transform transform; public GameObject gameObject; public T GetComponent<T>(){return default(T);} public T GetComponentInParent<T>(){return default(T);} public T[] GetComponentsInChildren<T>(bool b){return null;}}
+public class Component:Object{ public Transform transform; public GameObject gameObject; public T GetComponent<T>(){return default(T);} public T GetComponentInParent<T>(){return default(T);} public T GetComponentInChildren<T>(bool b){return default(T);} public T[] GetComponentsInChildren<T>(bool b){return null;}}
 public class Behaviour:Component{public bool enabled;}
 public class MonoBehaviour:Behaviour{ public Coroutine StartCoroutine(IEnumerator e){return null;}}
 public class Coroutine{}
-public class GameObject:Object{ public GameObject(string n){} public Transform transform; public int layer; public void SetActive(bool b){} public T GetComponent<T>(){return default(T);} public T AddComponent<T>() where T:Component{return default(T);} public T[] GetComponentsInChildren<T>(bool b){return null;}}
+public class GameObject:Object{ public GameObject(string n){} public Transform transform; public int layer; public void SetActive(bool b){} public T GetComponent<T>(){return default(T);} public T AddComponent<T>() where T:Component{return default(T);} public T GetComponentInChildren<T>(bool b){return default(T);} public T[] GetComponentsInChildren<T>(bool b){return null;}}
 public class Transform:Component{ public Vector3 position, localPosition, forward, up; public Quaternion localRotation, rotation; public Transform parent; public Transform Find(string n){return null;} public void SetParent(Transform p,bool w){} public bool IsChildOf(Transform t){return false;} public int GetSiblingIndex(){return 0;}}
 public struct Vector3{ public float x,y,z; public Vector3(float a,float b,float c){x=a;y=b;z=c;}
  public static Vector3 zero{get{return new Vector3(0,0,0);}} public static Vector3 up{get{return new Vector3(0,1,0);}} public static Vector3 down{get{return new Vector3(0,-1,0);}}

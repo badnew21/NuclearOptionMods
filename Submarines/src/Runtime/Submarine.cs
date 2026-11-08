@@ -14,13 +14,20 @@ namespace Submarines.Runtime
     }
 
     /// <summary>
-    /// Turns a stock ship hull into a submarine: depth keeping, AI tactics, weapons and the
-    /// countermeasure suite. Physics and decisions run on the server only; clients just see the
-    /// synced transform.
+    /// Turns a ship hull into a submarine: depth keeping, AI tactics, weapons and the
+    /// countermeasure suite.
+    ///
+    /// Two flavours: an AI boat (a stock Ship unit, simulated on the server) and a player boat
+    /// (a BOTE player vessel, which the game implements as an Aircraft simulated on the pilot's
+    /// machine). Depth physics run wherever the unit is simulated; weapons and countermeasures
+    /// always run on the server.
     /// </summary>
     internal sealed class Submarine : MonoBehaviour
     {
-        internal Ship Ship;
+        /// <summary>The unit this boat is (a Ship for AI boats, an Aircraft for BOTE player boats).</summary>
+        internal Unit Ship;
+        internal Rigidbody Rb;
+        internal bool Piloted;
         internal SubSpec Spec;
         internal SonarArray Sonar;
         internal SubMode Mode = SubMode.Patrol;
@@ -56,14 +63,27 @@ namespace Submarines.Runtime
 
         internal float MimicLeft { get { return Mathf.Max(0f, _mimicUntil - Time.time); } }
 
+        /// <summary>
+        /// True on the machine that simulates this boat's physics: the server for AI boats, the
+        /// pilot's machine for player boats.
+        /// </summary>
+        internal bool OwnsPhysics
+        {
+            get { return Ship != null && (Piloted ? Ship.LocalSim : Net.IsServer); }
+        }
+
         internal void ApplyState(float depth, float ordered, SubMode mode, int torps, int missiles, int decoys,
                                  float mimicLeft, float mimicCooldown, bool pending, WarheadMode warhead)
         {
             Warhead = warhead;
             HasSync = true;
             SyncedDepth = depth;
-            OrderedDepth = ordered;
-            Mode = mode;
+            if (!OwnsPhysics)
+            {
+                // The pilot's own depth order is authoritative on their machine.
+                OrderedDepth = ordered;
+                Mode = mode;
+            }
             Torpedoes = torps;
             Missiles = missiles;
             DecoysLeft = decoys;
@@ -72,21 +92,26 @@ namespace Submarines.Runtime
             PendingLaunch = pending;
         }
 
-        internal static Submarine Attach(Ship ship, SubSpec spec)
+        internal static Submarine Attach(Unit ship, SubSpec spec)
         {
             Submarine s = ship.GetComponent<Submarine>();
             if (s != null)
                 return s;
             s = ship.gameObject.AddComponent<Submarine>();
             s.Ship = ship;
+            s.Rb = Geo.BodyOf(ship);
+            s.Piloted = ship is Aircraft;
             s.Spec = spec;
             s.Torpedoes = spec.Role == SubRole.Attack ? SubConfig.AttackTorpedoes.Value : 6;
             s.Missiles = spec.Role == SubRole.Ballistic ? SubConfig.BallisticMissiles.Value : 0;
             s.DecoysLeft = SubConfig.Decoys.Value;
             s.Warhead = Nukes.Parse(SubConfig.BallisticWarhead.Value);
-            s.OrderedDepth = SubConfig.PatrolDepth.Value;
+            // Player boats spawn surfaced at the dock and dive when the pilot says so.
+            s.OrderedDepth = s.Piloted ? 0f : SubConfig.PatrolDepth.Value;
+            if (s.Piloted)
+                s.Mode = SubMode.Manual;
             s._nextMissile = Time.time + 30f;
-            s.Sonar = SonarArray.Attach(ship, s);
+            s.Sonar = SonarArray.Attach(ship, s, 0);
             Visual.SubVisual.Apply(ship.gameObject, spec);
             UnderwaterWorld.Register(s);
             SubmarinesPlugin.Log.LogInfo(spec.UnitName + " '" + ship.unitName + "' on station.");
@@ -126,6 +151,7 @@ namespace Submarines.Runtime
         internal void OrderDepth(float depth)
         {
             _manualDepth = Mathf.Clamp(depth, 0f, SubConfig.MaxDepth.Value);
+            OrderedDepth = _manualDepth;
             Mode = SubMode.Manual;
         }
 
@@ -167,6 +193,9 @@ namespace Submarines.Runtime
             return true;
         }
 
+        /// <summary>Close enough to launch depth to fire an SLBM (player boats fire on command).</summary>
+        internal bool AtLaunchDepth { get { return Depth <= SubConfig.LaunchDepth.Value + 10f; } }
+
         internal bool LaunchBallistic(Unit target)
         {
             if (!Net.IsServer || Missiles <= 0 || target == null || target.disabled)
@@ -192,7 +221,7 @@ namespace Submarines.Runtime
             Vector3 pos = Ship.transform.position + Ship.transform.forward * (Ship.definition != null ? Ship.definition.length * 0.1f : 5f);
             pos.y = Geo.Sea + 6f;
             Quaternion rot = Quaternion.LookRotation(Vector3.up, Ship.transform.forward);
-            Vector3 vel = Vector3.up * 45f + (Ship.rb != null ? Ship.rb.velocity : Vector3.zero);
+            Vector3 vel = Vector3.up * 45f + (Rb != null ? Rb.velocity : Vector3.zero);
             Missile m = null;
             try { m = spawner.SpawnMissile(def, pos, rot, vel, target, Ship); }
             catch (System.Exception ex) { SubmarinesPlugin.Log.LogWarning("SLBM spawn failed: " + ex.Message); }
@@ -238,16 +267,17 @@ namespace Submarines.Runtime
 
         private void Update()
         {
-            if (Ship == null || Ship.disabled || !Net.IsServer || !Net.InPlay)
+            if (Ship == null || Ship.disabled || !Net.InPlay)
                 return;
 
-            if (Time.time >= _nextBottomProbe)
+            if (OwnsPhysics && Time.time >= _nextBottomProbe)
             {
                 _nextBottomProbe = Time.time + 2f;
                 _waterDepth = Geo.WaterDepthLocal(Ship.transform.position);
             }
 
-            if (Time.time < _nextBrain)
+            // Player boats have a human in charge: no AI tactics.
+            if (!Net.IsServer || Piloted || Time.time < _nextBrain)
                 return;
             _nextBrain = Time.time + 1f;
             Think();
@@ -361,7 +391,7 @@ namespace Submarines.Runtime
 
             Mode = SubMode.Launch;
             OrderedDepth = SubConfig.LaunchDepth.Value;
-            float vy = Ship.rb != null ? Mathf.Abs(Ship.rb.velocity.y) : 0f;
+            float vy = Rb != null ? Mathf.Abs(Rb.velocity.y) : 0f;
             if (Mathf.Abs(Depth - SubConfig.LaunchDepth.Value) < 6f && vy < 1.5f)
                 LaunchBallistic(target);
         }
@@ -381,7 +411,7 @@ namespace Submarines.Runtime
                 if (u == null || u.disabled || !Net.Hostile(hq, u.NetworkHQ))
                     continue;
                 bool building = u.definition is BuildingDefinition;
-                bool ship = u is Ship && u.GetComponent<Submarine>() == null;
+                bool ship = Bootstrap.BoteBridge.IsVessel(u) && u.GetComponent<Submarine>() == null;
                 if (!building && !ship)
                     continue;
                 GlobalPosition known;
@@ -407,11 +437,11 @@ namespace Submarines.Runtime
 
         private void FixedUpdate()
         {
-            if (Ship == null || Ship.disabled || Ship.rb == null || !Net.InPlay)
+            if (Ship == null || Ship.disabled || Rb == null || !Net.InPlay)
                 return;
 
             float want;
-            if (Net.IsServer)
+            if (OwnsPhysics)
             {
                 float floor = Mathf.Max(0f, _waterDepth - SubConfig.BottomClearance.Value);
                 want = Mathf.Min(Mathf.Clamp(OrderedDepth, 0f, SubConfig.MaxDepth.Value), floor);
@@ -421,7 +451,7 @@ namespace Submarines.Runtime
                 // Client: if this machine simulates the hull at all (non-kinematic body), hold the
                 // depth the server reports so local buoyancy can't pop the boat up between
                 // network updates. If the body is kinematic the game drives it and this is skipped.
-                if (!HasSync || Ship.rb.isKinematic)
+                if (!HasSync || Piloted || Rb.isKinematic)
                     return;
                 want = SyncedDepth;
             }
@@ -430,7 +460,7 @@ namespace Submarines.Runtime
 
         private void HoldDepth(float want)
         {
-            Rigidbody rb = Ship.rb;
+            Rigidbody rb = Rb;
             float dt = Time.fixedDeltaTime;
             float depth = Depth;
 

@@ -7,7 +7,9 @@ using UnityEngine;
 
 namespace Submarines.Patches
 {
-    [HarmonyPatch(typeof(Encyclopedia), "AfterLoad")]
+    // AfterLoad is overloaded (AfterLoad() and AfterLoad(Encyclopedia)); name the parameterless
+    // one explicitly like Blueprinter does, or Harmony rejects the patch as ambiguous.
+    [HarmonyPatch(typeof(Encyclopedia), "AfterLoad", new System.Type[0])]
     internal static class EncyclopediaAfterLoadPatch
     {
         private static void Postfix(Encyclopedia __instance)
@@ -25,25 +27,35 @@ namespace Submarines.Patches
         }
     }
 
-    /// <summary>Attach submarine systems and hull sonar when a ship comes to life.</summary>
+    /// <summary>Attach submarine systems and hull sonar when a ship (or BOTE player vessel) comes to life.</summary>
     [HarmonyPatch(typeof(Unit), "InitializeUnit")]
     internal static class UnitInitializePatch
     {
         private static void Postfix(Unit __instance)
         {
-            Ship ship = __instance as Ship;
-            if (ship == null)
+            Unit unit = __instance;
+            if (unit == null)
                 return;
             try
             {
-                SubSpec spec = SubRegistry.SpecOf(ship);
+                SubSpec spec = SubRegistry.SpecOf(unit);
                 if (spec != null)
                 {
-                    Submarine.Attach(ship, spec);
+                    Submarine.Attach(unit, spec);
                     return;
                 }
-                if (SubConfig.SurfaceShipsGetSonar.Value && ship.definition != null && !SubRegistry.IsExcludedHull(ship.definition))
-                    SonarArray.Attach(ship, null);
+                if (!SubConfig.SurfaceShipsGetSonar.Value || unit.definition == null || SubRegistry.IsExcludedHull(unit.definition))
+                    return;
+                if (unit is Ship)
+                {
+                    SonarArray.Attach(unit, null, SubConfig.SurfaceAsw.Value ? SubConfig.SurfaceAswTorpedoes.Value : 0);
+                }
+                else if (BoteBridge.IsBoteShip(unit.definition))
+                {
+                    // Player-driven BOTE warship: sonar so its pilot can hunt subs on the F8 display.
+                    // No automatic ASW torpedoes; a human is in charge of that ship.
+                    SonarArray.Attach(unit, null, 0);
+                }
             }
             catch (System.Exception ex)
             {

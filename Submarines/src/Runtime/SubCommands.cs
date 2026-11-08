@@ -37,6 +37,8 @@ namespace Submarines.Runtime
         Sent,
         WarheadSet,
         HoldFire,
+        TooDeep,
+        Launched,
     }
 
     /// <summary>
@@ -99,10 +101,21 @@ namespace Submarines.Runtime
                         value = (float)block;
                         return SubNotice.HoldFire;
                     }
-                    if (s.FindStrategicTarget() == null)
+                    Unit target = s.FindStrategicTarget();
+                    if (target == null)
                         return SubNotice.NoTarget;
-                    s.PendingLaunch = true;
                     value = nuclear ? 1f : 0f;
+                    if (s.Piloted)
+                    {
+                        // The pilot drives the depth; fire now if shallow enough.
+                        if (!s.AtLaunchDepth)
+                        {
+                            value = SubConfig.LaunchDepth.Value + 10f;
+                            return SubNotice.TooDeep;
+                        }
+                        return s.LaunchBallistic(target) ? SubNotice.Launched : SubNotice.TubeNotReady;
+                    }
+                    s.PendingLaunch = true;
                     return SubNotice.LaunchDepth;
                 }
 
@@ -140,6 +153,8 @@ namespace Submarines.Runtime
                 case SubNotice.NoTarget: return "No known target in range.";
                 case SubNotice.LaunchDepth: return value > 0.5f ? "Coming to launch depth. Nuclear release authorised." : "Coming to launch depth (conventional).";
                 case SubNotice.WarheadSet: return "Warhead set: " + Nukes.Label((WarheadMode)(int)value) + ".";
+                case SubNotice.TooDeep: return "Too deep to launch: come up to " + value.ToString("F0") + " m or shallower.";
+                case SubNotice.Launched: return value > 0.5f ? "Nuclear SLBM away." : "SLBM away.";
                 case SubNotice.HoldFire: return "Holding fire: " + Nukes.BlockText((ReleaseBlock)(int)value) + ".";
                 case SubNotice.Ping: return "Ping! (we are counter-detectable now)";
                 case SubNotice.NotYourBoat: return "That boat belongs to another faction.";
@@ -151,7 +166,10 @@ namespace Submarines.Runtime
         /// <summary>Run locally on the server, or forward to it from a client.</summary>
         internal static string Issue(Submarine s, SubOrder order)
         {
-            if (Net.IsServer)
+            // Depth is driven by whoever simulates the hull: the server for AI boats, the pilot's
+            // own machine for a BOTE player boat.
+            bool depthOrder = order == SubOrder.Deeper || order == SubOrder.Shallower || order == SubOrder.Release;
+            if (Net.IsServer || (depthOrder && s.OwnsPhysics))
             {
                 float v;
                 return Text(Execute(s, order, out v), v);

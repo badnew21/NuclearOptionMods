@@ -83,7 +83,7 @@ namespace Submarines.Sync
     /// </summary>
     internal static class SubNet
     {
-        internal const byte Version = 2;
+        internal const byte Version = 3;
 
         private static NetworkManagerNuclearOption _hooked;
         private static bool _serializers;
@@ -332,17 +332,16 @@ namespace Submarines.Sync
             if (Net.IsServer)
                 return;
             Unit u = FindUnit(m.Unit);
-            Ship ship = u as Ship;
-            if (ship == null)
+            if (u == null)
                 return;
-            Submarine s = ship.GetComponent<Submarine>();
+            Submarine s = u.GetComponent<Submarine>();
             if (s == null)
             {
                 // InitializeUnit didn't attach on this client for some reason: do it now.
-                SubSpec spec = SubRegistry.SpecOf(ship);
+                SubSpec spec = SubRegistry.SpecOf(u);
                 if (spec == null)
                     return;
-                s = Submarine.Attach(ship, spec);
+                s = Submarine.Attach(u, spec);
             }
             s.ApplyState(m.Depth, m.Ordered, (SubMode)m.Mode, m.Torps, m.Missiles, m.Decoys, m.MimicLeft, m.MimicCooldown, m.Pending, (WarheadMode)m.Warhead);
         }

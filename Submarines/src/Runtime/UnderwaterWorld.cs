@@ -102,10 +102,8 @@ namespace Submarines.Runtime
             if (!Net.IsServer || parent == null)
                 return null;
             Vector3 pos = Geo.GlobalOf(parent) - parent.transform.forward * 40f;
-            Vector3 vel = Vector3.zero;
-            Ship s = parent as Ship;
-            if (s != null && s.rb != null)
-                vel = s.rb.velocity;
+            Rigidbody body = Geo.BodyOf(parent);
+            Vector3 vel = body != null ? body.velocity : Vector3.zero;
             Decoy d = new Decoy(kind, parent, pos, vel);
             Decoys.Add(d);
             Sync.SubNet.SendDecoySpawn(d, null);

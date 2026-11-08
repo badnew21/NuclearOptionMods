@@ -9,7 +9,7 @@ namespace Submarines
     {
         public const string Guid = "com.badnew21.submarines";
         public const string Name = "Submarines";
-        public const string Version = "0.3.0";
+        public const string Version = "0.4.0";
     }
 
     /// <summary>
@@ -18,6 +18,7 @@ namespace Submarines
     /// spoofing suite (noisemaker decoys, false-echo repeaters, acoustic mimicry).
     /// </summary>
     [BepInPlugin(PluginInfo.Guid, PluginInfo.Name, PluginInfo.Version)]
+    [BepInDependency(Bootstrap.BoteBridge.BoteGuid, BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class SubmarinesPlugin : BaseUnityPlugin
     {
         internal static SubmarinesPlugin Instance { get; private set; }
@@ -51,6 +52,7 @@ namespace Submarines
                     }
                 }
                 Log.LogInfo(PluginInfo.Name + " " + PluginInfo.Version + " loaded (" + ok + " patches, " + failed + " failed).");
+                Bootstrap.BoteBridge.Hook();
             }
             catch (Exception ex)
             {

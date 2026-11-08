@@ -56,10 +56,7 @@ namespace Submarines.Runtime
 
         internal static float SpeedOf(Unit u)
         {
-            Ship s = u as Ship;
-            if (s != null && s.rb != null)
-                return s.rb.velocity.magnitude;
-            Rigidbody rb = u.GetComponent<Rigidbody>();
+            Rigidbody rb = Geo.BodyOf(u);
             return rb != null ? rb.velocity.magnitude : 0f;
         }
 
