@@ -51,6 +51,7 @@ jobs:
         run: |
           dotnet tool install -g ilspycmd --version 8.2.0.7535
           export PATH="$PATH:$HOME/.dotnet/tools"
+          export DOTNET_ROLL_FORWARD=Major
           ilspycmd -p -o "$RUNNER_TEMP/src" -r ~/nomod-managed ~/nomod-managed/Assembly-CSharp.dll > /dev/null
           echo "Decompiled $(find "$RUNNER_TEMP/src" -name '*.cs' | wc -l) files"
 
