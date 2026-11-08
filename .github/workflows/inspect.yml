@@ -1,0 +1,71 @@
+name: Inspect game code
+
+# Manual-only helper for mod debugging: decompiles the game assembly (from the free dedicated
+# server) and prints just the code paths matching a search term to the job log. Nothing from
+# the game is committed or uploaded.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pattern:
+        description: "grep -E pattern to search for in decompiled code"
+        required: true
+        default: "not available here|availableAircraft"
+      types:
+        description: "Comma-separated type names to print in full"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore game assemblies
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/nomod-managed
+          key: nomod-managed-none
+          restore-keys: nomod-managed-
+
+      - name: Download dedicated server if not cached
+        if: steps.cache.outputs.cache-matched-key == ''
+        run: |
+          sudo add-apt-repository -y multiverse && sudo dpkg --add-architecture i386 && sudo apt-get update
+          echo steam steam/question select "I AGREE" | sudo debconf-set-selections
+          echo steam steam/license note '' | sudo debconf-set-selections
+          sudo apt-get install -y steamcmd
+          d="$RUNNER_TEMP/srv"
+          steamcmd +force_install_dir "$d" +login anonymous +app_update 3930080 validate +quit || true
+          mkdir -p ~/nomod-managed && cp -r "$d/NuclearOptionServer_Data/Managed/." ~/nomod-managed/
+
+      - name: Decompile
+        run: |
+          dotnet tool install -g ilspycmd --version 8.2.0.7535
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          ilspycmd -p -o "$RUNNER_TEMP/src" -r ~/nomod-managed ~/nomod-managed/Assembly-CSharp.dll > /dev/null
+          echo "Decompiled $(find "$RUNNER_TEMP/src" -name '*.cs' | wc -l) files"
+
+      - name: Search
+        env:
+          PATTERN: ${{ github.event.inputs.pattern }}
+          TYPES: ${{ github.event.inputs.types }}
+        run: |
+          cd "$RUNNER_TEMP/src"
+          echo "===== matches for: $PATTERN"
+          grep -rnE --include=*.cs -B4 -A12 "$PATTERN" . | head -n 900 || true
+          IFS=',' read -ra ts <<< "$TYPES"
+          for t in "${ts[@]}"; do
+            t="$(echo "$t" | xargs)"; [ -z "$t" ] && continue
+            f=$(grep -rlE --include=*.cs "(class|struct) $t\b" . | head -n 1)
+            echo "===== type $t ($f)"
+            [ -n "$f" ] && head -n 700 "$f"
+          done
