@@ -24,6 +24,33 @@ namespace Submarines.Bootstrap
         private static ICollection<AircraftDefinition> _shipDefs;
         private static bool _registered;
 
+        /// <summary>Player sub -> the BOTE ship it was built from. A hangar offers the sub wherever it offers the donor.</summary>
+        private static readonly Dictionary<AircraftDefinition, AircraftDefinition> DonorOf = new Dictionary<AircraftDefinition, AircraftDefinition>();
+
+        internal static AircraftDefinition Donor(AircraftDefinition sub)
+        {
+            AircraftDefinition d;
+            return sub != null && DonorOf.TryGetValue(sub, out d) ? d : null;
+        }
+
+        /// <summary>Player subs whose donor this list contains (to append to a hangar's offer).</summary>
+        internal static List<AircraftDefinition> SubsOfferedWith(AircraftDefinition[] list)
+        {
+            List<AircraftDefinition> extra = null;
+            if (list == null || DonorOf.Count == 0)
+                return null;
+            foreach (KeyValuePair<AircraftDefinition, AircraftDefinition> kv in DonorOf)
+            {
+                if (Array.IndexOf(list, kv.Value) >= 0 && Array.IndexOf(list, kv.Key) < 0)
+                {
+                    if (extra == null)
+                        extra = new List<AircraftDefinition>(2);
+                    extra.Add(kv.Key);
+                }
+            }
+            return extra;
+        }
+
         // Hangar.availableAircraft is non-public in the game assembly (BOTE builds against a
         // publicized copy), so go through reflection.
         private static readonly FieldInfo HangarAircraft = AccessTools.Field(typeof(Hangar), "availableAircraft");
@@ -120,11 +147,13 @@ namespace Submarines.Bootstrap
             // BOTE re-runs its init when Blueprinter reloads; re-add every time, it's idempotent.
             if (ssn != null)
             {
+                DonorOf[ssn] = attackDonor;
                 _shipDefs.Add(ssn);
                 OfferWherever(attackDonor, ssn, dock);
             }
             if (ssbn != null)
             {
+                DonorOf[ssbn] = ballisticDonor;
                 _shipDefs.Add(ssbn);
                 OfferWherever(ballisticDonor, ssbn, dock);
             }

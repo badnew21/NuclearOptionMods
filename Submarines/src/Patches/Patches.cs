@@ -143,4 +143,41 @@ namespace Submarines.Patches
             return true;
         }
     }
+
+    // ------------------------------------------------------------------ BOTE player subs
+    //
+    // A hangar decides what can spawn from it with its own availableAircraft list, and hangars
+    // that are part of a map or spawned later never see a list edit made at startup (the spawn
+    // menu then shows the sub greyed out, "Not available here"). Instead, answer the question
+    // live: a hangar offers a player sub wherever it offers that sub's donor BOTE ship.
+
+    [HarmonyPatch(typeof(Hangar), "CanSpawnAircraft", new System.Type[] { typeof(AircraftDefinition) })]
+    internal static class HangarCanSpawnSubPatch
+    {
+        private static void Postfix(Hangar __instance, AircraftDefinition definition, ref bool __result)
+        {
+            if (__result || definition == null)
+                return;
+            AircraftDefinition donor = BoteBridge.Donor(definition);
+            if (donor != null)
+                __result = __instance.CanSpawnAircraft(donor);
+        }
+    }
+
+    [HarmonyPatch(typeof(Hangar), "GetAvailableAircraft", new System.Type[0])]
+    internal static class HangarAvailableSubPatch
+    {
+        private static void Postfix(ref AircraftDefinition[] __result)
+        {
+            System.Collections.Generic.List<AircraftDefinition> extra = BoteBridge.SubsOfferedWith(__result);
+            if (extra == null)
+                return;
+            // Never modify the hangar's own array; hand back an extended copy.
+            AircraftDefinition[] copy = new AircraftDefinition[__result.Length + extra.Count];
+            System.Array.Copy(__result, copy, __result.Length);
+            for (int i = 0; i < extra.Count; i++)
+                copy[__result.Length + i] = extra[i];
+            __result = copy;
+        }
+    }
 }

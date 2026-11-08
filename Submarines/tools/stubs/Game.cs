@@ -11,7 +11,7 @@ public struct GlobalPosition{ public float x,y,z; public Vector3 AsVector3(){ret
 public class FactionHQ:MonoBehaviour{ public int GetWarheadStockpile(){return 0;} public void RpcUpdateTrackingInfo(PersistentID id){} public bool TryGetKnownPosition(Unit u,out GlobalPosition p){p=default(GlobalPosition);return false;}}
 public class Unit:MonoBehaviour{ public UnitDefinition definition; public bool disabled; public FactionHQ NetworkHQ; public PersistentID persistentID; public string unitName; public bool LocalSim; public GlobalPosition GlobalPosition(){return default(GlobalPosition);} public void InitializeUnit(){}}
 public class Ship:Unit{ public Rigidbody rb;} public class Aircraft:Unit{ public Rigidbody rb;}
-public class Hangar:MonoBehaviour{ public AircraftDefinition[] availableAircraft;}
+public class Hangar:MonoBehaviour{ public AircraftDefinition[] availableAircraft; public bool CanSpawnAircraft(AircraftDefinition definition){return false;} public AircraftDefinition[] GetAvailableAircraft(){return null;}}
 public class Missile:Unit{ public WeaponInfo GetWeaponInfo(){return null;} public class Warhead{ public bool Armed;} public void Detonate(Vector3 n,bool a,bool b){}}
 public static class UnitRegistry{ public static List<Unit> allUnits; public static bool TryGetUnit(PersistentID? id,out Unit u){u=null;return false;}}
 public interface IDamageable{ Unit GetUnit(); void TakeDamage(float a,float b,float c,float d,float e,PersistentID id);}
