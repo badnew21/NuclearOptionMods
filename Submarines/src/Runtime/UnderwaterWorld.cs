@@ -29,26 +29,58 @@ namespace Submarines.Runtime
             Arrays.RemoveAll(a => a == null);
 
             float dt = Time.deltaTime;
+            bool server = Net.IsServer;
             for (int i = Decoys.Count - 1; i >= 0; i--)
             {
                 Decoy d = Decoys[i];
                 if (!d.Alive)
                 {
                     Decoys.RemoveAt(i);
+                    if (server)
+                        Sync.SubNet.SendDecoyEnd(d);
                     continue;
                 }
                 d.Tick(dt);
             }
 
-            if (!Net.IsServer)
-                return;
+            // Server runs the real torpedoes; clients dead-reckon their mirrors.
             for (int i = Torpedoes.Count - 1; i >= 0; i--)
             {
                 Torpedo t = Torpedoes[i];
+                if (server == t.Remote)
+                {
+                    // A mirror left over after becoming host (or vice versa): drop it.
+                    Torpedoes.RemoveAt(i);
+                    continue;
+                }
                 t.Tick(dt);
                 if (t.Dead)
+                {
                     Torpedoes.RemoveAt(i);
+                    if (server)
+                        Sync.SubNet.SendTorpedoEnd(t);
+                }
             }
+        }
+
+        internal static Torpedo FindTorpedo(int id)
+        {
+            for (int i = 0; i < Torpedoes.Count; i++)
+            {
+                if (Torpedoes[i].Id == id)
+                    return Torpedoes[i];
+            }
+            return null;
+        }
+
+        internal static Decoy FindDecoy(int id)
+        {
+            for (int i = 0; i < Decoys.Count; i++)
+            {
+                if (Decoys[i].Id == id)
+                    return Decoys[i];
+            }
+            return null;
         }
 
         internal static Torpedo LaunchTorpedo(Unit owner, SonarArray array, SonarContact target, bool asw)
@@ -76,6 +108,7 @@ namespace Submarines.Runtime
                 vel = s.rb.velocity;
             Decoy d = new Decoy(kind, parent, pos, vel);
             Decoys.Add(d);
+            Sync.SubNet.SendDecoySpawn(d, null);
             if (SubConfig.VerboseLog.Value)
                 SubmarinesPlugin.Log.LogInfo(parent.unitName + " launched a " + kind + " decoy.");
             return d;

@@ -9,6 +9,8 @@ A BepInEx 5 plugin that adds two submarines to Nuclear Option:
 
 Both show up in the mission editor's ship list like any stock ship.
 
+![Kestrel and Leviathan models](docs/preview.png)
+
 > **Status: untested in game.** I wrote this without a copy of the game, so it has never been
 > loaded into Nuclear Option. The game API calls come from other open source NO mods (MK-88
 > Hydra, MK-65 Crosswim, Blueprinter, PlayableVehicles, DetectionDisable), and the code
@@ -18,22 +20,34 @@ Both show up in the mission editor's ship list like any stock ship.
 
 ## How it works
 
+### Model
+
+Each sub has its own 3D model, generated from code at startup (`src/Visual/HullGeometry.cs`).
+The SSN gets a pump-jet with stator vanes; the SSBN gets a 7-blade propeller and a raised missile
+deck with 12 hatches. Both have a cruciform stern, a sail with fairwater planes and mast stubs,
+and an anechoic near-black finish. The mod builds the meshes itself, so no asset bundle has to be
+shipped or downloaded, and everyone with the mod sees exactly the same boat.
+
+`tools/geom/export.sh` runs that same geometry code under mono and writes the meshes to
+`models/*.obj`, so you can open them in Blender. The preview above was rendered from those files.
+
 ### Hulls
 
-The mod has no 3D models of its own. At `Encyclopedia.AfterLoad` it clones a stock warship
-prefab for each sub, gives the clone a new `ShipDefinition` and a unique Mirage prefab hash, and
-registers it in the encyclopedia. A sub has its own prefab, so saves, the editor and multiplayer
-spawns all keep it separate from the donor ship.
+At `Encyclopedia.AfterLoad` the mod clones a stock warship prefab for each sub, gives the clone
+a new `ShipDefinition` and its own Mirage prefab hash, swaps the donor's visuals for the sub
+model and registers it. The donor's renderers, smoke and lights are switched off (and kept off),
+but its colliders, damage model and AI stay, since that's what makes the sub behave like a real
+unit. Because each sub has its own prefab, saves, the editor and multiplayer spawns keep it
+separate from the donor ship.
 
-The donor hull comes from keywords in the config (`corvette,frigate,destroyer` for the SSN by
-default). On startup the BepInEx log lists every stock ship and missile with its jsonKey, so you
-can point the config at the right one.
+The donor comes from keywords in the config (`corvette,frigate,destroyer` for the SSN by
+default). On startup the BepInEx log lists every stock ship and missile with its jsonKey.
 
 ### Diving
 
 Ships float on stock buoyancy. The sub fights that with a depth controller that commands
 vertical speed and runs a disturbance observer: it measures how hard buoyancy and waves push
-the hull and cancels that push. A second loop keeps the hull level. Depths: periscope 14 m,
+the hull and cancels that push. A second loop keeps the hull level. Depths: periscope 11 m (sail just under, masts out),
 patrol 120 m, max 300 m, and the boat always stays 25 m above the seabed.
 
 ### Staying off radar
@@ -118,8 +132,29 @@ included. Ctrl+F8 cycles the range (10/30/60 km), and F9 picks the next boat.
 | Home | SSBN: climb to launch depth and fire at the best known target |
 | Pause | Active ping |
 
-Orders only work in single player or on the host. In multiplayer, clients see the display but
-can't give orders.
+In multiplayer, a client's orders go to the host, which checks the boat belongs to that player's
+faction, runs the order, and sends back the result line.
+
+## Multiplayer
+
+Everyone in the lobby needs the mod installed, at the same version. Here's what each player
+sees and how it gets there:
+
+| What | How it reaches other players |
+|---|---|
+| The sub itself | A normal networked unit. The host spawns it from the registered prefab, and each client builds the model locally. The prefab hash is worked out the same way on every machine. |
+| Sub position and depth | The game's own ship sync. The host also sends each sub's depth twice a second. If a client simulates the hull physics itself, it holds that depth so the boat doesn't bob up between updates. |
+| Ammo, depth orders, mimicry state | `SubNet` state messages, twice a second per boat. |
+| Torpedoes | Position and heading 4 times a second. Clients dead-reckon between updates and draw a torpedo model. |
+| Decoys | One spawn message. Their motion is deterministic, so each client runs it locally, and enemy decoys fool a client's sonar display the same way they fool the host's. |
+| Explosions, SLBMs | Stock networked missiles, so the game syncs them. |
+| Player orders | Client sends to host, host validates and replies. |
+
+`SubNet` uses Mirage custom messages, the same approach PlayableVehicles uses. A client with a
+different network version gets a warning in the host's log and no sub sync.
+
+A player without the mod can't spawn the sub prefab when the host sends it. Expect errors or
+a disconnect for them.
 
 ## Install
 
@@ -150,6 +185,12 @@ To type-check without the game (mono `mcs` only):
 ./tools/check.sh
 ```
 
+To export the models to OBJ:
+
+```bash
+./tools/geom/export.sh
+```
+
 ## Known risks
 
 These are the places most likely to break on first contact with the real game:
@@ -165,7 +206,11 @@ These are the places most likely to break on first contact with the real game:
 - **Method names patched by string** (`AfterLoad`, `RegisterPrefabs`, `InitializeUnit`,
   `RequestRadarCheck`, `RequestLoSCheck`, `Turret_OnDetectTarget`). Each patch is applied
   separately, so a renamed method only switches off that one feature and logs an error.
-- **The hulls still look like the donor ship.** A proper submarine model needs a Unity asset
-  bundle.
-- **Multiplayer.** Torpedoes and decoys live only on the server. Clients see their effects
-  (explosions, map tracks) but not the objects themselves.
+- **Colliders are the donor's.** Hits and damage use the donor ship's colliders, which won't
+  match the sub's shape exactly. Replacing them would mean rebuilding its damage parts.
+- **Waterline.** The model assumes the donor's origin sits at its waterline. If the surfaced sub
+  floats too high or too low, adjust `[Model] VerticalOffset`.
+- **Materials.** The model copies a lit material from the donor (the game uses URP). If the sub
+  shows up pink or invisible, that lookup failed. Check the log.
+- **Multiplayer messages.** The `SubNet` messages follow PlayableVehicles' working pattern, but
+  nobody has run them in a real lobby yet.

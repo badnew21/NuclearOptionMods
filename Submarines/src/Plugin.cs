@@ -9,7 +9,7 @@ namespace Submarines
     {
         public const string Guid = "com.badnew21.submarines";
         public const string Name = "Submarines";
-        public const string Version = "0.1.0";
+        public const string Version = "0.2.0";
     }
 
     /// <summary>
@@ -60,7 +60,9 @@ namespace Submarines
 
         private void Update()
         {
+            Sync.SubNet.Tick();
             Runtime.UnderwaterWorld.Tick();
+            Visual.TorpedoVisuals.Tick();
             UI.SonarDisplay.TickInput();
         }
 

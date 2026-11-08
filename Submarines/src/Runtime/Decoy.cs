@@ -36,6 +36,29 @@ namespace Submarines.Runtime
         private readonly float _parentSl;
         private readonly float _parentTs;
 
+        internal Vector3 EchoDir { get { return _echoDir; } }
+        internal float LifeLeft { get { return Expires - Time.time; } }
+
+        /// <summary>Client mirror of a server decoy. Its motion is deterministic, so a spawn message is enough.</summary>
+        internal Decoy(int id, DecoyKind kind, Unit parent, Vector3 globalPos, Vector3 drift, Vector3 echoDir, float lifeLeft, float echoRange)
+        {
+            Id = id;
+            Kind = kind;
+            Parent = parent;
+            Faction = parent != null ? parent.NetworkHQ : null;
+            Born = Time.time;
+            Expires = Born + lifeLeft;
+            Pos = globalPos;
+            Drift = drift;
+            _echoDir = echoDir;
+            _echoRange = echoRange;
+            EchoPos = globalPos + echoDir * echoRange;
+            _parentSl = parent != null ? Acoustics.SourceLevel(parent) : 110f;
+            _parentTs = parent != null ? Acoustics.TargetStrength(parent) : 12f;
+        }
+
+        internal float EchoRange { get { return _echoRange; } }
+
         internal Decoy(DecoyKind kind, Unit parent, Vector3 globalPos, Vector3 parentVelocity)
         {
             Id = _nextId++;

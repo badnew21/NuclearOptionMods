@@ -89,6 +89,11 @@ namespace Submarines.Bootstrap
                 return;
             }
             def.unitPrefab = prefab;
+            Visual.HullPlan plan = Visual.SubVisual.PlanFor(spec);
+            def.length = plan.Length;
+            def.width = plan.Beam;
+            def.height = plan.Height;
+            Visual.SubVisual.Apply(prefab, spec);
             Unit unit = prefab.GetComponent<Unit>();
             if (unit != null)
                 unit.definition = def;
@@ -130,11 +135,21 @@ namespace Submarines.Bootstrap
             clone.transform.localPosition = Vector3.zero;
             clone.transform.localRotation = Quaternion.identity;
 
+            // Only hashes every peer agrees on (encyclopedia prefabs), so host and clients pick the
+            // same hash for the clone and the client can spawn what the host sends.
             HashSet<int> taken = new HashSet<int>();
-            foreach (NetworkIdentity ni in Resources.FindObjectsOfTypeAll<NetworkIdentity>())
+            if (Encyclopedia.Lookup != null)
             {
-                if (ni != null && ni.PrefabHash != 0 && !ni.transform.IsChildOf(clone.transform))
-                    taken.Add(ni.PrefabHash);
+                foreach (UnitDefinition u in Encyclopedia.Lookup.Values)
+                {
+                    if (u == null || u.unitPrefab == null || u.unitPrefab == clone)
+                        continue;
+                    foreach (NetworkIdentity ni in u.unitPrefab.GetComponentsInChildren<NetworkIdentity>(true))
+                    {
+                        if (ni != null && ni.PrefabHash != 0)
+                            taken.Add(ni.PrefabHash);
+                    }
+                }
             }
 
             NetworkIdentity[] ids = clone.GetComponentsInChildren<NetworkIdentity>(true);

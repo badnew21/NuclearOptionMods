@@ -42,6 +42,33 @@ namespace Submarines.Runtime
         private bool _lockIsEcho;
         private readonly HashSet<int> _rejectedEchoes = new HashSet<int>();
 
+        /// <summary>Client-side mirror of a server torpedo: dead-reckoned between SubNet updates.</summary>
+        internal readonly bool Remote;
+        internal float LastUpdate;
+
+        internal float Speed { get { return _speed; } }
+
+        internal Torpedo(int id, Unit owner, Vector3 pos, Vector3 heading, float speed, bool asw)
+        {
+            Id = id;
+            Remote = true;
+            Owner = owner;
+            Faction = owner != null ? owner.NetworkHQ : null;
+            Asw = asw;
+            Pos = pos;
+            Heading = heading;
+            _speed = speed;
+            LastUpdate = Time.time;
+        }
+
+        internal void ApplyRemote(Vector3 pos, Vector3 heading)
+        {
+            // Blend toward the authoritative position rather than snapping.
+            Pos = (pos - Pos).sqrMagnitude > 400f ? pos : Vector3.Lerp(Pos, pos, 0.5f);
+            Heading = heading;
+            LastUpdate = Time.time;
+        }
+
         internal Torpedo(Unit owner, SonarArray wireArray, SonarContact contact, Vector3 aimGlobal, bool asw)
         {
             Id = _nextId++;
@@ -74,6 +101,13 @@ namespace Submarines.Runtime
         {
             if (Dead)
                 return;
+            if (Remote)
+            {
+                Pos += Heading * _speed * dt;
+                if (Time.time - LastUpdate > 3f)
+                    Dead = true;
+                return;
+            }
 
             Vector3 goal = CurrentGoal();
             Steer(goal, dt);

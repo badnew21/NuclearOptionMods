@@ -50,6 +50,27 @@ namespace Submarines.Runtime
         private float _lastCmdVy;
         private bool _haveLast;
 
+        // Client-side copy of server state (SubNet).
+        internal bool HasSync;
+        internal float SyncedDepth;
+
+        internal float MimicLeft { get { return Mathf.Max(0f, _mimicUntil - Time.time); } }
+
+        internal void ApplyState(float depth, float ordered, SubMode mode, int torps, int missiles, int decoys,
+                                 float mimicLeft, float mimicCooldown, bool pending)
+        {
+            HasSync = true;
+            SyncedDepth = depth;
+            OrderedDepth = ordered;
+            Mode = mode;
+            Torpedoes = torps;
+            Missiles = missiles;
+            DecoysLeft = decoys;
+            _mimicUntil = Time.time + mimicLeft;
+            _nextMimic = Time.time + mimicCooldown;
+            PendingLaunch = pending;
+        }
+
         internal static Submarine Attach(Ship ship, SubSpec spec)
         {
             Submarine s = ship.GetComponent<Submarine>();
@@ -64,6 +85,7 @@ namespace Submarines.Runtime
             s.OrderedDepth = SubConfig.PatrolDepth.Value;
             s._nextMissile = Time.time + 30f;
             s.Sonar = SonarArray.Attach(ship, s);
+            Visual.SubVisual.Apply(ship.gameObject, spec);
             UnderwaterWorld.Register(s);
             SubmarinesPlugin.Log.LogInfo(spec.UnitName + " '" + ship.unitName + "' on station.");
             return s;
@@ -346,14 +368,32 @@ namespace Submarines.Runtime
 
         private void FixedUpdate()
         {
-            if (Ship == null || Ship.disabled || Ship.rb == null || !Net.IsServer || !Net.InPlay)
+            if (Ship == null || Ship.disabled || Ship.rb == null || !Net.InPlay)
                 return;
 
+            float want;
+            if (Net.IsServer)
+            {
+                float floor = Mathf.Max(0f, _waterDepth - SubConfig.BottomClearance.Value);
+                want = Mathf.Min(Mathf.Clamp(OrderedDepth, 0f, SubConfig.MaxDepth.Value), floor);
+            }
+            else
+            {
+                // Client: if this machine simulates the hull at all (non-kinematic body), hold the
+                // depth the server reports so local buoyancy can't pop the boat up between
+                // network updates. If the body is kinematic the game drives it and this is skipped.
+                if (!HasSync || Ship.rb.isKinematic)
+                    return;
+                want = SyncedDepth;
+            }
+            HoldDepth(want);
+        }
+
+        private void HoldDepth(float want)
+        {
             Rigidbody rb = Ship.rb;
             float dt = Time.fixedDeltaTime;
             float depth = Depth;
-            float floor = Mathf.Max(0f, _waterDepth - SubConfig.BottomClearance.Value);
-            float want = Mathf.Min(Mathf.Clamp(OrderedDepth, 0f, SubConfig.MaxDepth.Value), floor);
 
             if (want < 1f && depth < 3f)
             {

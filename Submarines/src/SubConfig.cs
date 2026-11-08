@@ -67,6 +67,9 @@ namespace Submarines
         internal static ConfigEntry<bool> ShowTruth;
         internal static ConfigEntry<bool> VerboseLog;
 
+        // Model / multiplayer
+        internal static ConfigEntry<float> ModelVerticalOffset;
+
         internal static void Bind(ConfigFile cfg)
         {
             AttackDonorKeys = cfg.Bind("Hulls", "AttackSubDonor", "corvette,frigate,destroyer",
@@ -76,14 +79,15 @@ namespace Submarines
             AttackCost = cfg.Bind("Hulls", "AttackSubCost", 2400f, "Encyclopedia value of the SSN (millions).");
             BallisticCost = cfg.Bind("Hulls", "BallisticSubCost", 4800f, "Encyclopedia value of the SSBN (millions).");
 
-            PeriscopeDepth = cfg.Bind("Depth", "PeriscopeDepth", 14f, "Metres below sea level. Masts are exposed at this depth.");
+            PeriscopeDepth = cfg.Bind("Depth", "PeriscopeDepth", 11f,
+                "Metres below sea level. With the stock model the sail is just under water and the masts stick out.");
             PatrolDepth = cfg.Bind("Depth", "PatrolDepth", 120f, "Default cruising depth (m).");
             MaxDepth = cfg.Bind("Depth", "MaxDepth", 300f, "Deepest commanded depth (m).");
             LaunchDepth = cfg.Bind("Depth", "LaunchDepth", 30f, "Depth the SSBN climbs to before launching.");
             BottomClearance = cfg.Bind("Depth", "BottomClearance", 25f, "Keep at least this far above the seabed.");
             VerticalSpeed = cfg.Bind("Depth", "VerticalSpeed", 4f, "Max dive/climb rate (m/s).");
 
-            SubmergedThreshold = cfg.Bind("Detection", "SubmergedThreshold", 8f,
+            SubmergedThreshold = cfg.Bind("Detection", "SubmergedThreshold", 10f,
                 "Hull origin deeper than this (m) counts as submerged: invisible to surface radar.");
             MastRadarRange = cfg.Bind("Detection", "MastRadarRange", 9000f,
                 "At periscope depth, radars within this range (m) can still paint the masts. 0 = never.");
@@ -136,6 +140,8 @@ namespace Submarines
             LaunchKey = cfg.Bind("UI", "LaunchKey", KeyCode.Home, "SSBN: launch at the nearest known enemy target.");
             PingKey = cfg.Bind("UI", "PingKey", KeyCode.Pause, "Send an active sonar ping (reveals you).");
             ShowTruth = cfg.Bind("UI", "ShowTruth", false, "Debug: mark false contacts on the display.");
+            ModelVerticalOffset = cfg.Bind("Model", "VerticalOffset", 0f,
+                "Raise (+) or lower (-) the submarine model relative to the donor hull's waterline, if it floats too high or low when surfaced.");
             VerboseLog = cfg.Bind("UI", "VerboseLog", false, "Log sonar and weapon events.");
         }
 

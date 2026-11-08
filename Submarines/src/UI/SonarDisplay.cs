@@ -8,7 +8,7 @@ namespace Submarines.UI
     /// <summary>
     /// IMGUI sonar plot for the local player's submarines (F8). North-up, centred on the selected
     /// boat. Shows what the boat's sonar believes, so enemy decoys and phantoms show up here as
-    /// ordinary contacts. Orders work on the host / in single player.
+    /// ordinary contacts. Orders from clients are sent to the host and run there.
     /// </summary>
     internal static class SonarDisplay
     {
@@ -38,85 +38,35 @@ namespace Submarines.UI
             CollectMine();
             if (Mine.Count == 0)
                 return;
-            if (Input.GetKeyDown(SubConfig.NextSubKey.Value))
-            {
-                if (Input.GetKey(KeyCode.LeftShift))
-                {
-                    if (Net.IsServer)
-                    {
-                        Selected().ClearManual();
-                        Say("Released to AI control.");
-                    }
-                }
-                else
-                {
-                    _index = (_index + 1) % Mine.Count;
-                }
-            }
-
             Submarine s = Selected();
             if (s == null)
                 return;
 
-            bool any = Input.GetKeyDown(SubConfig.DeeperKey.Value) || Input.GetKeyDown(SubConfig.ShallowerKey.Value) ||
-                       Input.GetKeyDown(SubConfig.TorpedoKey.Value) || Input.GetKeyDown(SubConfig.DecoyKey.Value) ||
-                       Input.GetKeyDown(SubConfig.MimicKey.Value) || Input.GetKeyDown(SubConfig.LaunchKey.Value) ||
-                       Input.GetKeyDown(SubConfig.PingKey.Value);
-            if (!any)
-                return;
-            if (!Net.IsServer)
+            if (Input.GetKeyDown(SubConfig.NextSubKey.Value))
             {
-                Say("Orders are host-only in multiplayer.");
+                if (Input.GetKey(KeyCode.LeftShift))
+                    Say(SubCommands.Issue(s, SubOrder.Release));
+                else
+                    _index = (_index + 1) % Mine.Count;
                 return;
             }
-
             if (Input.GetKeyDown(SubConfig.DeeperKey.Value))
-            {
-                s.OrderDepth(Mathf.Max(s.OrderedDepth, 0f) + 20f);
-                Say("Make depth " + s.OrderedDepth.ToString("F0") + " m.");
-            }
+                Say(SubCommands.Issue(s, SubOrder.Deeper));
             if (Input.GetKeyDown(SubConfig.ShallowerKey.Value))
-            {
-                float d = s.OrderedDepth - 20f;
-                if (d < SubConfig.PeriscopeDepth.Value)
-                    d = d < SubConfig.PeriscopeDepth.Value - 10f ? 0f : SubConfig.PeriscopeDepth.Value;
-                s.OrderDepth(d);
-                Say(d <= 0f ? "Surface, surface." : "Make depth " + d.ToString("F0") + " m.");
-            }
+                Say(SubCommands.Issue(s, SubOrder.Shallower));
             if (Input.GetKeyDown(SubConfig.TorpedoKey.Value))
-            {
-                SonarContact c = s.Sonar != null ? s.Sonar.BestTarget(SubConfig.TorpedoRange.Value, 0.15f, true, true) : null;
-                if (c == null)
-                    Say("No firing solution.");
-                else
-                    Say(s.FireTorpedo(c) ? "Torpedo away on " + Acoustics.Label(c.Class) + " contact." : "Tube not ready.");
-            }
+                Say(SubCommands.Issue(s, SubOrder.Torpedo));
             if (Input.GetKeyDown(SubConfig.DecoyKey.Value))
-                Say(s.LaunchDecoy() ? "Countermeasure launched." : "No decoy ready.");
+                Say(SubCommands.Issue(s, SubOrder.Decoy));
             if (Input.GetKeyDown(SubConfig.MimicKey.Value))
-                Say(s.EngageMimic() ? "Acoustic mimicry engaged." : "Mimicry recharging.");
+                Say(SubCommands.Issue(s, SubOrder.Mimic));
             if (Input.GetKeyDown(SubConfig.LaunchKey.Value))
-            {
-                if (s.Spec.Role != SubRole.Ballistic)
-                    Say("No missile tubes on this boat.");
-                else if (s.Missiles <= 0)
-                    Say("Tubes empty.");
-                else if (s.FindStrategicTarget() == null)
-                    Say("No known target in range.");
-                else
-                {
-                    s.PendingLaunch = true;
-                    Say("Coming to launch depth.");
-                }
-            }
-            if (Input.GetKeyDown(SubConfig.PingKey.Value) && s.Sonar != null)
-            {
-                s.Sonar.RequestPing();
-                Say("Ping! (we are counter-detectable now)");
-            }
+                Say(SubCommands.Issue(s, SubOrder.Launch));
+            if (Input.GetKeyDown(SubConfig.PingKey.Value))
+                Say(SubCommands.Issue(s, SubOrder.Ping));
         }
 
-        private static void Say(string m)
+        internal static void Say(string m)
         {
             _msg = m;
             _msgUntil = Time.unscaledTime + 4f;
