@@ -147,6 +147,36 @@ the next launch will be nuclear, conventional, or held (and why). Ctrl+F8 cycles
 In multiplayer, a client's orders go to the host, which checks the boat belongs to that player's
 faction, runs the order, and sends back the result line.
 
+## Driving a sub yourself (with BOTE)
+
+If you also run [Boscali Ocean Training Exercise](https://github.com/MinecrackTyler/BoscaliOceanTrainingExercise)
+(BOTE), which makes ships player-drivable, this mod adds a drivable version of each sub to it:
+
+| Unit | jsonKey | Built on BOTE's |
+|---|---|---|
+| Kestrel-class SSN | `BOTE_SUB_SSN_Kestrel` | Shard corvette (handling, HUD, weapons) |
+| Leviathan-class SSBN | `BOTE_SUB_SSBN_Leviathan` | Dynamo destroyer |
+
+They show up wherever the donor ship can be spawned (BOTE's dock, and any carrier or base
+hangar offering it). They spawn surfaced and drive with BOTE's normal ship controls. On top
+of that:
+
+| Key | Order |
+|---|---|
+| PageDown / PageUp | Dive / climb 20 m (11 m = periscope depth, 0 = surface) |
+| F8 | Sonar display, centred on your boat |
+| Insert / Delete / End / Pause | Torpedo, decoy, mimicry, ping |
+| Home | SSBN: launch at the best known target (must be 40 m or shallower) |
+| Backslash | SSBN: warhead setting |
+
+Below 10 m you're invisible to radar, exactly like the AI boats. Depth is handled on your own
+machine, and torpedoes and missiles go through the host. BOTE's player warships also get a hull
+sonar, so a surface player can hunt subs on the F8 display. Change the donor ships under `[BOTE]`
+in the config; the log lists BOTE's ships by jsonKey.
+
+The carriers (Annex-class Assault Carrier, Hyperion-class Fleet Carrier) are already part of
+BOTE itself, so they don't need anything from this mod.
+
 ## Multiplayer
 
 Everyone in the lobby needs the mod installed, at the same version. Here's what each player
@@ -218,6 +248,10 @@ To export the models to OBJ:
 ```
 
 ## Known risks
+
+- **BOTE player subs** keep the donor ship's deck weapons, and those can still be fired while
+  submerged. The BOTE hook goes through reflection against BOTE 1.5.5's code; if a BOTE update
+  renames those fields, the log says so and only the drivable subs are skipped.
 
 These are the places most likely to break on first contact with the real game:
 
