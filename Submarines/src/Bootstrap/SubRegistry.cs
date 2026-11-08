@@ -48,8 +48,8 @@ namespace Submarines.Bootstrap
                     return;
                 }
 
-                Register(enc, SubSpec.Attack, attackDonor, SubConfig.AttackCost.Value);
-                Register(enc, SubSpec.Ballistic, ballisticDonor, SubConfig.BallisticCost.Value);
+                Register(enc, SubSpec.Attack, attackDonor, Price(attackDonor, SubConfig.AttackCostMultiplier.Value));
+                Register(enc, SubSpec.Ballistic, ballisticDonor, Price(ballisticDonor, SubConfig.BallisticCostMultiplier.Value));
                 RegisterWithMirage();
                 _done = true;
             }
@@ -90,7 +90,7 @@ namespace Submarines.Bootstrap
             enc.ships.Add(def);
             AddToLookups(enc, def);
             SubmarinesPlugin.Log.LogInfo("Registered " + spec.UnitName + " (" + spec.JsonKey + ") on the '" +
-                                         donor.unitName + "' hull [" + donor.jsonKey + "].");
+                                         donor.unitName + "' hull [" + donor.jsonKey + "], price " + cost.ToString("F0") + ".");
         }
 
         /// <summary>Clone the donor prefab, point it at the new definition and give it the sub model.</summary>
@@ -251,6 +251,13 @@ namespace Submarines.Bootstrap
         private static bool Usable(ShipDefinition s)
         {
             return s != null && s.unitPrefab != null && SubSpec.ForKey(s.jsonKey) == null;
+        }
+
+        /// <summary>Sub price: the donor ship's price times a multiplier, never negative.</summary>
+        internal static float Price(UnitDefinition donor, float multiplier)
+        {
+            float baseValue = donor != null ? donor.value : 0f;
+            return Mathf.Max(0f, baseValue * Mathf.Max(0f, multiplier));
         }
 
         internal static void MarkEnabled(UnitDefinition def)

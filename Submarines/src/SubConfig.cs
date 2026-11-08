@@ -9,8 +9,8 @@ namespace Submarines
         // Hulls
         internal static ConfigEntry<string> AttackDonorKeys;
         internal static ConfigEntry<string> BallisticDonorKeys;
-        internal static ConfigEntry<float> AttackCost;
-        internal static ConfigEntry<float> BallisticCost;
+        internal static ConfigEntry<float> AttackCostMultiplier;
+        internal static ConfigEntry<float> BallisticCostMultiplier;
 
         // Depth
         internal static ConfigEntry<float> PeriscopeDepth;
@@ -85,8 +85,12 @@ namespace Submarines
                 "Comma-separated keywords (matched against stock ship jsonKey/unitName, first hit wins) for the hull the SSN is cloned from. The game log lists every ship on startup.");
             BallisticDonorKeys = cfg.Bind("Hulls", "BallisticSubDonor", "destroyer,cruiser,frigate",
                 "Keywords for the hull the SSBN is cloned from.");
-            AttackCost = cfg.Bind("Hulls", "AttackSubCost", 2400f, "Encyclopedia value of the SSN (millions).");
-            BallisticCost = cfg.Bind("Hulls", "BallisticSubCost", 4800f, "Encyclopedia value of the SSBN (millions).");
+            // New keys (replacing the old fixed AttackSubCost / BallisticSubCost) so the cheaper default
+            // applies even to an existing config file.
+            AttackCostMultiplier = cfg.Bind("Hulls", "AttackSubCostMultiplier", 1f,
+                "SSN price as a multiple of the ship it is built on (1 = same price as that ship, 0.5 = half).");
+            BallisticCostMultiplier = cfg.Bind("Hulls", "BallisticSubCostMultiplier", 1f,
+                "SSBN price as a multiple of the ship it is built on.");
 
             PeriscopeDepth = cfg.Bind("Depth", "PeriscopeDepth", 11f,
                 "Metres below sea level. With the stock model the sail is just under water and the masts stick out.");

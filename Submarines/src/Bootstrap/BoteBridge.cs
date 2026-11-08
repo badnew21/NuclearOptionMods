@@ -141,8 +141,10 @@ namespace Submarines.Bootstrap
                 return;
             }
 
-            AircraftDefinition ssn = RegisterOne(enc, SubSpec.Attack, attackDonor, SubConfig.AttackCost.Value);
-            AircraftDefinition ssbn = RegisterOne(enc, SubSpec.Ballistic, ballisticDonor, SubConfig.BallisticCost.Value);
+            AircraftDefinition ssn = RegisterOne(enc, SubSpec.Attack, attackDonor,
+                SubRegistry.Price(attackDonor, SubConfig.AttackCostMultiplier.Value));
+            AircraftDefinition ssbn = RegisterOne(enc, SubSpec.Ballistic, ballisticDonor,
+                SubRegistry.Price(ballisticDonor, SubConfig.BallisticCostMultiplier.Value));
 
             // BOTE re-runs its init when Blueprinter reloads; re-add every time, it's idempotent.
             if (ssn != null)
@@ -188,7 +190,7 @@ namespace Submarines.Bootstrap
             enc.aircraft.Add(def);
             SubRegistry.AddToLookups(enc, def);
             SubmarinesPlugin.Log.LogInfo("Registered player " + spec.UnitName + " (" + spec.PlayerJsonKey + ") on BOTE's '" +
-                                         donor.unitName + "' [" + donor.jsonKey + "].");
+                                         donor.unitName + "' [" + donor.jsonKey + "], price " + cost.ToString("F0") + ".");
             return def;
         }
 
