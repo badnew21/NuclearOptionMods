@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Folder that contains NuclearOption.exe -->
+    <NuclearOptionRoot>C:\Program Files (x86)\Steam\steamapps\common\Nuclear Option</NuclearOptionRoot>
+  </PropertyGroup>
+</Project>
