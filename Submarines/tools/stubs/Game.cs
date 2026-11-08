@@ -20,6 +20,7 @@ public class Spawner:MonoBehaviour{ public Missile SpawnMissile(MissileDefinitio
 public class NetworkSceneSingleton<T>{ public static T i;}
 public static class Datum{ public static float LocalSeaY; public static Transform origin;}
 public static class PhysicsLayers{ public static LayerMask StaticsMask;}
+public class Weapon:MonoBehaviour{} public class WeaponManager:MonoBehaviour{ public HardpointSet[] hardpointSets;} public class HardpointSet{ public List<WeaponMount> weaponOptions;}
 public class TargetDetector{} public class Turret:MonoBehaviour{ void Turret_OnDetectTarget(Unit unit){}}
 public enum GameState{Encyclopedia,SinglePlayer}
 public static class GameManager{ public static GameState gameState; public static bool GetLocalAircraft(out Aircraft a){a=null;return false;} public static bool GetLocalPlayer(out NuclearOption.Networking.Player p){p=null;return false;}}

@@ -140,15 +140,18 @@ namespace Submarines.UI
             string state = p.Submerged ? (p.MastsExposed ? "PERISCOPE" : "SUBMERGED") : "SURFACED";
             string line = p.Spec.UnitName + "   " + state + "   depth " + p.Depth.ToString("F0") + " m (ordered " +
                           p.OrderedDepth.ToString("F0") + ")   water " +
-                          (p.WaterDepth >= 4999f ? "deep" : p.WaterDepth.ToString("F0") + " m");
+                          (p.WaterDepth >= 4999f ? "deep" : p.WaterDepth.ToString("F0") + " m") +
+                          "   torps " + p.Torpedoes + (p.Spec.Role == SubRole.Ballistic ? "  SLBM " + p.Missiles : "") +
+                          "  decoys " + p.DecoysLeft;
             string hint;
             if (p.DepthLimitedBySeabed)
                 hint = p.MaxDepthHere < 1f
                     ? "Too shallow to dive here: head for deeper water."
                     : "Seabed limits depth here to " + p.MaxDepthHere.ToString("F0") + " m.";
             else if (!p.Submerged && p.OrderedDepth < 1f)
-                hint = SubConfig.DeeperKey.Value + " to dive, " + SubConfig.ShallowerKey.Value + " to climb, " +
-                       SubConfig.DisplayKey.Value + " for sonar";
+                hint = SubConfig.DeeperKey.Value + " dive, " + SubConfig.ShallowerKey.Value + " climb, " +
+                       SubConfig.TorpedoKey.Value + " torpedo, " + SubConfig.DecoyKey.Value + " decoy, " +
+                       SubConfig.DisplayKey.Value + " sonar";
             else
                 hint = string.Empty;
             Rect r = new Rect(Screen.width * 0.5f - 300f, 8f, 600f, 44f);

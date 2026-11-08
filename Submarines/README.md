@@ -169,6 +169,11 @@ of that:
 | Home | SSBN: launch at the best known target (must be 40 m or shallower) |
 | Backslash | SSBN: warhead setting |
 
+The subs carry submarine weapons only: torpedoes, decoys, and SLBMs on the Leviathan. The donor
+ship's deck gun, CIWS and missile launchers are removed. While you drive, a line at the top of the
+screen shows depth, water depth and ammo. The seabed only stops you diving when the hull would
+come within 6 m of it (`[Depth] KeelClearance`).
+
 Below 10 m you're invisible to radar, exactly like the AI boats. Depth is handled on your own
 machine, and torpedoes and missiles go through the host. BOTE's player warships also get a hull
 sonar, so a surface player can hunt subs on the F8 display. Change the donor ships under `[BOTE]`
@@ -249,12 +254,11 @@ To export the models to OBJ:
 
 ## Known risks
 
-- **BOTE player subs** keep the donor ship's deck weapons, and those can still be fired while
-  submerged. The BOTE hook goes through reflection against BOTE 1.5.5's code; if a BOTE update
-  renames those fields, the log says so and only the drivable subs are skipped.
-
-These are the places most likely to break on first contact with the real game:
-
+- **Removing donor weapons** switches off the donor ship's turret and launcher objects on the
+  sub's prefab and empties its loadout slots. If a BOTE update relies on those turrets being
+  live and something errors, set `[Weapons] RemoveDonorWeapons = false` and tell me. The BOTE hook
+  goes through reflection against BOTE 1.5.5's code; if a BOTE update renames those fields, the
+  log says so and only the drivable subs are skipped.
 - **Cloned network prefab.** The other mods only clone mount prefabs that have no
   `NetworkIdentity`. Here a whole ship gets cloned under an inactive holder with a fresh prefab
   hash. If Mirage rejects that on spawn, switching to a Blueprinter `.nobp` hull is the fallback.

@@ -9,7 +9,7 @@ namespace Submarines
     {
         public const string Guid = "com.badnew21.submarines";
         public const string Name = "Submarines";
-        public const string Version = "0.4.2";
+        public const string Version = "0.5.0";
     }
 
     /// <summary>

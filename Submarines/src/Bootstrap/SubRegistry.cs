@@ -108,6 +108,7 @@ namespace Submarines.Bootstrap
             def.width = plan.Beam;
             def.height = plan.Height;
             Visual.SubVisual.Apply(prefab, spec);
+            SubArmament.Strip(prefab, spec.UnitName + " [" + key + "]");
             Unit unit = prefab.GetComponent<Unit>();
             if (unit != null)
                 unit.definition = def;

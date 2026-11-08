@@ -31,6 +31,7 @@ namespace Submarines
         // Weapons
         internal static ConfigEntry<int> AttackTorpedoes;
         internal static ConfigEntry<float> TorpedoReload;
+        internal static ConfigEntry<bool> StripDonorWeapons;
         internal static ConfigEntry<float> TorpedoRange;
         internal static ConfigEntry<float> TorpedoSpeed;
         internal static ConfigEntry<float> TorpedoDamage;
@@ -116,6 +117,9 @@ namespace Submarines
                 "Extra transmission loss when source and receiver are on opposite sides of the layer.");
 
             AttackTorpedoes = cfg.Bind("Weapons", "AttackSubTorpedoes", 18, "Torpedo load for the SSN.");
+            StripDonorWeapons = cfg.Bind("Weapons", "RemoveDonorWeapons", true,
+                "Remove the donor ship's deck guns, CIWS and missile launchers, so the subs only carry submarine weapons " +
+                "(torpedoes, decoys, and SLBMs on the SSBN).");
             TorpedoReload = cfg.Bind("Weapons", "TorpedoReload", 25f, "Seconds between torpedo shots per boat.");
             TorpedoRange = cfg.Bind("Weapons", "TorpedoRange", 22000f, "Torpedo run (m).");
             TorpedoSpeed = cfg.Bind("Weapons", "TorpedoSpeed", 26f, "Torpedo speed (m/s). 26 m/s is roughly 50 knots.");
