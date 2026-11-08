@@ -64,6 +64,8 @@ namespace Submarines.UI
                 Say(SubCommands.Issue(s, SubOrder.Launch));
             if (Input.GetKeyDown(SubConfig.PingKey.Value))
                 Say(SubCommands.Issue(s, SubOrder.Ping));
+            if (Input.GetKeyDown(SubConfig.WarheadKey.Value))
+                Say(SubCommands.Issue(s, SubOrder.Warhead));
         }
 
         internal static void Say(string m)
@@ -111,7 +113,7 @@ namespace Submarines.UI
             }
 
             CollectMine();
-            Rect box = new Rect(12f, Screen.height - 470f, 340f, 458f);
+            Rect box = new Rect(12f, Screen.height - 492f, 340f, 480f);
             Color oldColor = GUI.color;
             GUI.color = new Color(0f, 0.05f, 0.03f, 0.85f);
             GUI.DrawTexture(box, _px);
@@ -184,14 +186,27 @@ namespace Submarines.UI
                 s.Spec.UnitName + "  [" + (_index + 1) + "/" + Mine.Count + "]  " + (range / 1000f).ToString("F0") + " km\n" +
                 "Depth " + s.Depth.ToString("F0") + " m  (ordered " + s.OrderedDepth.ToString("F0") + ")  " + s.Mode + "\n" +
                 stealth + "\n" +
-                "Torps " + s.Torpedoes + "  SLBM " + s.Missiles + "  Decoys " + s.DecoysLeft + "  Mimic " + mimic;
-            GUI.Label(new Rect(box.x + 10f, c.y + Radius + 6f, 320f, 70f), text);
+                "Torps " + s.Torpedoes + "  SLBM " + s.Missiles + "  Decoys " + s.DecoysLeft + "  Mimic " + mimic +
+                WarheadLine(s);
+            GUI.Label(new Rect(box.x + 10f, c.y + Radius + 6f, 320f, 90f), text);
             GUI.Label(new Rect(box.x + 10f, box.y + 4f, 320f, 22f),
                 SubConfig.NextSubKey.Value + " next  " + SubConfig.DeeperKey.Value + "/" + SubConfig.ShallowerKey.Value + " depth  " +
                 SubConfig.TorpedoKey.Value + " torp  " + SubConfig.DecoyKey.Value + " decoy");
             if (Time.unscaledTime < _msgUntil)
                 GUI.Label(new Rect(box.x + 10f, box.y + box.height - 22f, 320f, 22f), _msg);
             GUI.color = oldColor;
+        }
+
+        private static string WarheadLine(Submarine s)
+        {
+            if (s.Spec.Role != SubRole.Ballistic)
+                return string.Empty;
+            bool nuclear;
+            ReleaseBlock block;
+            MissileDefinition next = s.PreviewMissile(out nuclear, out block);
+            string state = next == null ? "HOLD (" + Nukes.BlockText(block) + ")"
+                : nuclear ? "next: NUCLEAR" : (s.Warhead == WarheadMode.Conventional ? "next: conventional" : "next: conventional (" + Nukes.BlockText(block) + ")");
+            return "\nWarhead " + Nukes.Label(s.Warhead) + "  stockpile " + Nukes.Stockpile(s.Ship.NetworkHQ) + "  " + state;
         }
 
         private static Vector2 Clamp(Vector2 p)

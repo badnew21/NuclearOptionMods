@@ -35,7 +35,7 @@ public struct Quaternion{ public float x,y,z,w; public Quaternion(float x,float 
  public static Quaternion Euler(float a,float b,float c){return identity;} public static Quaternion LookRotation(Vector3 f){return identity;} public static Quaternion LookRotation(Vector3 f,Vector3 u){return identity;}
  public static Vector3 operator*(Quaternion q,Vector3 v){Vector3 u=new Vector3(q.x,q.y,q.z); Vector3 t=Vector3.Cross(u,v)*2f; return v+t*q.w+Vector3.Cross(u,t);}}
 public static class Mathf{ public const float PI=3.14159265f, Deg2Rad=PI/180f, Rad2Deg=180f/PI;
- public static float Max(float a,float b){return a>b?a:b;} public static int Max(int a,int b){return a>b?a:b;} public static float Min(float a,float b){return a<b?a:b;}
+ public static float Max(float a,float b){return a>b?a:b;} public static int Max(int a,int b){return a>b?a:b;} public static float Min(float a,float b){return a<b?a:b;} public static int Min(int a,int b){return a<b?a:b;}
  public static float Clamp(float a,float b,float c){return a<b?b:(a>c?c:a);} public static float Clamp01(float a){return Clamp(a,0,1);} public static float Abs(float a){return a<0?-a:a;}
  public static float Sqrt(float a){return (float)Math.Sqrt(a);} public static float Pow(float a,float b){return (float)Math.Pow(a,b);} public static float Log10(float a){return (float)Math.Log10(a);} public static float Log(float a,float b){return (float)Math.Log(a,b);}
  public static float Exp(float a){return (float)Math.Exp(a);} public static float Atan2(float a,float b){return (float)Math.Atan2(a,b);} public static float Sin(float a){return (float)Math.Sin(a);} public static float Cos(float a){return (float)Math.Cos(a);}
@@ -52,7 +52,7 @@ public static class Resources{ public static T[] FindObjectsOfTypeAll<T>() where
 public static class Time{ public static float time, deltaTime, fixedDeltaTime, unscaledTime;}
 public static class Random{ public static float Range(float a,float b){return a;} public static Vector2 insideUnitCircle;}
 public static class Input{ public static bool GetKeyDown(KeyCode k){return false;} public static bool GetKey(KeyCode k){return false;}}
-public enum KeyCode{F8,F9,PageDown,PageUp,Insert,Delete,End,Home,Pause,LeftControl,LeftShift}
+public enum KeyCode{F8,F9,PageDown,PageUp,Insert,Delete,End,Home,Pause,LeftControl,LeftShift,Backslash}
 public struct Rect{ public float x,y,width,height; public Rect(float a,float b,float c,float d){x=a;y=b;width=c;height=d;}}
 public struct Color{ public float r,g,b,a; public Color(float r,float g,float b){this.r=r;this.g=g;this.b=b;a=1;} public Color(float r,float g,float b,float a){this.r=r;this.g=g;this.b=b;this.a=a;} public static Color white, magenta, black;}
 public class Texture{} public class Texture2D:Texture{ public Texture2D(int w,int h){} public void SetPixel(int x,int y,Color c){} public void Apply(){}}

@@ -12,6 +12,7 @@ namespace Submarines.Runtime
         Mimic,
         Launch,
         Ping,
+        Warhead,
     }
 
     internal enum SubNotice : byte
@@ -34,6 +35,8 @@ namespace Submarines.Runtime
         Ping,
         NotYourBoat,
         Sent,
+        WarheadSet,
+        HoldFire,
     }
 
     /// <summary>
@@ -88,10 +91,27 @@ namespace Submarines.Runtime
                         return SubNotice.NoTubes;
                     if (s.Missiles <= 0)
                         return SubNotice.TubesEmpty;
+                {
+                    bool nuclear;
+                    ReleaseBlock block;
+                    if (s.PreviewMissile(out nuclear, out block) == null)
+                    {
+                        value = (float)block;
+                        return SubNotice.HoldFire;
+                    }
                     if (s.FindStrategicTarget() == null)
                         return SubNotice.NoTarget;
                     s.PendingLaunch = true;
+                    value = nuclear ? 1f : 0f;
                     return SubNotice.LaunchDepth;
+                }
+
+                case SubOrder.Warhead:
+                    if (s.Spec.Role != SubRole.Ballistic)
+                        return SubNotice.NoTubes;
+                    s.Warhead = (WarheadMode)(((int)s.Warhead + 1) % 3);
+                    value = (float)s.Warhead;
+                    return SubNotice.WarheadSet;
 
                 case SubOrder.Ping:
                     if (s.Sonar != null)
@@ -118,7 +138,9 @@ namespace Submarines.Runtime
                 case SubNotice.NoTubes: return "No missile tubes on this boat.";
                 case SubNotice.TubesEmpty: return "Tubes empty.";
                 case SubNotice.NoTarget: return "No known target in range.";
-                case SubNotice.LaunchDepth: return "Coming to launch depth.";
+                case SubNotice.LaunchDepth: return value > 0.5f ? "Coming to launch depth. Nuclear release authorised." : "Coming to launch depth (conventional).";
+                case SubNotice.WarheadSet: return "Warhead set: " + Nukes.Label((WarheadMode)(int)value) + ".";
+                case SubNotice.HoldFire: return "Holding fire: " + Nukes.BlockText((ReleaseBlock)(int)value) + ".";
                 case SubNotice.Ping: return "Ping! (we are counter-detectable now)";
                 case SubNotice.NotYourBoat: return "That boat belongs to another faction.";
                 case SubNotice.Sent: return "Order sent to host...";

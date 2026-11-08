@@ -27,6 +27,7 @@ namespace Submarines.Sync
         public float MimicLeft;
         public float MimicCooldown;
         public bool Pending;
+        public byte Warhead;
     }
 
     internal struct TorpStateMsg
@@ -82,7 +83,7 @@ namespace Submarines.Sync
     /// </summary>
     internal static class SubNet
     {
-        internal const byte Version = 1;
+        internal const byte Version = 2;
 
         private static NetworkManagerNuclearOption _hooked;
         private static bool _serializers;
@@ -211,6 +212,7 @@ namespace Submarines.Sync
                         MimicLeft = s.MimicLeft,
                         MimicCooldown = s.MimicCooldownLeft,
                         Pending = s.PendingLaunch,
+                        Warhead = (byte)s.Warhead,
                     });
                 }
             }
@@ -342,7 +344,7 @@ namespace Submarines.Sync
                     return;
                 s = Submarine.Attach(ship, spec);
             }
-            s.ApplyState(m.Depth, m.Ordered, (SubMode)m.Mode, m.Torps, m.Missiles, m.Decoys, m.MimicLeft, m.MimicCooldown, m.Pending);
+            s.ApplyState(m.Depth, m.Ordered, (SubMode)m.Mode, m.Torps, m.Missiles, m.Decoys, m.MimicLeft, m.MimicCooldown, m.Pending, (WarheadMode)m.Warhead);
         }
 
         private static void OnTorpState(INetworkPlayer conn, TorpStateMsg m)
@@ -418,6 +420,7 @@ namespace Submarines.Sync
                 w.WriteSingle(m.MimicLeft);
                 w.WriteSingle(m.MimicCooldown);
                 w.WriteBoolean(m.Pending);
+                w.WriteByte(m.Warhead);
             };
             Reader<SubStateMsg>.Read = r => new SubStateMsg
             {
@@ -431,6 +434,7 @@ namespace Submarines.Sync
                 MimicLeft = r.ReadSingle(),
                 MimicCooldown = r.ReadSingle(),
                 Pending = r.ReadBoolean(),
+                Warhead = r.ReadByte(),
             };
 
             Writer<TorpStateMsg>.Write = (w, m) =>

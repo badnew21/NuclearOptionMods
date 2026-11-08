@@ -57,8 +57,9 @@ namespace Submarines.Runtime
         internal float MimicLeft { get { return Mathf.Max(0f, _mimicUntil - Time.time); } }
 
         internal void ApplyState(float depth, float ordered, SubMode mode, int torps, int missiles, int decoys,
-                                 float mimicLeft, float mimicCooldown, bool pending)
+                                 float mimicLeft, float mimicCooldown, bool pending, WarheadMode warhead)
         {
+            Warhead = warhead;
             HasSync = true;
             SyncedDepth = depth;
             OrderedDepth = ordered;
@@ -82,6 +83,7 @@ namespace Submarines.Runtime
             s.Torpedoes = spec.Role == SubRole.Attack ? SubConfig.AttackTorpedoes.Value : 6;
             s.Missiles = spec.Role == SubRole.Ballistic ? SubConfig.BallisticMissiles.Value : 0;
             s.DecoysLeft = SubConfig.Decoys.Value;
+            s.Warhead = Nukes.Parse(SubConfig.BallisticWarhead.Value);
             s.OrderedDepth = SubConfig.PatrolDepth.Value;
             s._nextMissile = Time.time + 30f;
             s.Sonar = SonarArray.Attach(ship, s);
@@ -170,11 +172,19 @@ namespace Submarines.Runtime
             if (!Net.IsServer || Missiles <= 0 || target == null || target.disabled)
                 return false;
             Spawner spawner = NetworkSceneSingleton<Spawner>.i;
-            MissileDefinition def = SubRegistry.FindMissile(SubConfig.Keys(SubConfig.BallisticMissileKeys));
+            bool nuclear;
+            ReleaseBlock block;
+            MissileDefinition def = Nukes.Choose(Warhead, Ship.NetworkHQ, out nuclear, out block);
             if (spawner == null || def == null)
             {
-                SubmarinesPlugin.Log.LogWarning("No ballistic missile found for keys '" + SubConfig.BallisticMissileKeys.Value +
-                                                "'. Check the missile list in the log.");
+                SubmarinesPlugin.Log.LogWarning(Ship.unitName + " holding fire: " +
+                                                (def == null ? Nukes.BlockText(block) : "no spawner") + ".");
+                return false;
+            }
+            if (nuclear && FriendliesNear(target, SubConfig.NuclearSafetyRadius.Value))
+            {
+                SubmarinesPlugin.Log.LogInfo(Ship.unitName + " won't fire a nuclear SLBM at " + target.unitName +
+                                             ": friendly units inside the safety radius.");
                 return false;
             }
 
@@ -190,11 +200,38 @@ namespace Submarines.Runtime
                 return false;
 
             Missiles--;
+            if (nuclear)
+                Nukes.ConsumeWarhead(Ship.NetworkHQ);
             _nextMissile = Time.time + SubConfig.BallisticInterval.Value;
             UnderwaterWorld.Transient(Ship, 40000f);
-            SubmarinesPlugin.Log.LogInfo(Ship.unitName + " launched " + def.unitName + " at " + target.unitName +
-                                         " (" + Missiles + " left).");
+            SubmarinesPlugin.Log.LogInfo(Ship.unitName + " launched " + (nuclear ? "NUCLEAR " : "") + def.unitName +
+                                         " at " + target.unitName + " (" + Missiles + " left).");
             return true;
+        }
+
+        /// <summary>Warhead setting for this boat (starts from the config, player can change it).</summary>
+        internal WarheadMode Warhead;
+
+        /// <summary>Would a launch right now be nuclear, conventional, or blocked?</summary>
+        internal MissileDefinition PreviewMissile(out bool nuclear, out ReleaseBlock block)
+        {
+            return Nukes.Choose(Warhead, Ship != null ? Ship.NetworkHQ : null, out nuclear, out block);
+        }
+
+        private bool FriendliesNear(Unit target, float radius)
+        {
+            if (radius <= 0f || target == null)
+                return false;
+            FactionHQ hq = Ship.NetworkHQ;
+            Vector3 p = Geo.GlobalOf(target);
+            foreach (Unit u in UnitRegistry.allUnits)
+            {
+                if (u == null || u.disabled || u == Ship || hq == null || u.NetworkHQ != hq)
+                    continue;
+                if ((Geo.GlobalOf(u) - p).sqrMagnitude < radius * radius)
+                    return true;
+            }
+            return false;
         }
 
         // ---------------------------------------------------------------- AI
@@ -312,7 +349,9 @@ namespace Submarines.Runtime
                 return;
             }
 
-            Unit target = FindStrategicTarget();
+            bool nuclear;
+            ReleaseBlock block;
+            Unit target = PreviewMissile(out nuclear, out block) != null ? FindStrategicTarget() : null;
             if (target == null)
             {
                 Mode = SubMode.Patrol;

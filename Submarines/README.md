@@ -5,7 +5,7 @@ A BepInEx 5 plugin that adds two submarines to Nuclear Option:
 | Unit | jsonKey | Role |
 |---|---|---|
 | Kestrel-class SSN | `SUB_SSN_Kestrel` | Attack sub. 18 wire-guided heavyweight torpedoes, hunts ships and other subs. |
-| Leviathan-class SSBN | `SUB_SSBN_Leviathan` | Ballistic missile sub. 12 SLBMs (fired as stock ballistic missiles), 6 torpedoes for self defence. |
+| Leviathan-class SSBN | `SUB_SSBN_Leviathan` | Ballistic missile sub. 12 SLBMs, nuclear or conventional (stock ballistic missiles), 6 torpedoes for self defence. |
 
 Both show up in the mission editor's ship list like any stock ship.
 
@@ -109,10 +109,22 @@ jumps across the thermocline. When it gets pinged it switches on mimicry and dro
   to the hull parts in the bubble radius, then spawns and detonates a stock missile at the
   waterline so every client sees the explosion. You can turn that last part off with
   `StockWarheadVisuals`.
-- **SLBMs.** The SSBN climbs to 30 m, cold-launches a stock ballistic missile (picked by keyword)
-  up out of the water, and aims it at the best enemy building or ship its faction has a known
-  position for, between 8 km and 150 km away. Every launch makes a loud transient that gives
-  away its position.
+- **SLBMs.** The SSBN climbs to 30 m, cold-launches a stock ballistic missile up out of the
+  water, and aims it at the best enemy building or ship its faction has a known position for,
+  between 8 km and 150 km away. Every launch makes a loud transient that gives away its
+  position.
+- **Nuclear SLBMs.** At startup the mod sorts the stock ballistic missiles by their weapon info
+  into a nuclear one and a conventional one, and logs which it picked. Each SSBN has a warhead
+  setting (`BallisticWarhead` in the config, and players can change it per boat):
+  - `Nuclear` (default): fires nuclear when release is allowed, otherwise conventional.
+  - `NuclearOnly`: fires nuclear or holds fire.
+  - `Conventional`: never nuclear.
+
+  A nuclear launch follows the same rules as the stock game. The mission has to have escalated
+  to tactical (or strategic, if the missile is flagged strategic) nuclear use, and the faction
+  needs a warhead in its stockpile. Each launch takes one warhead out of airbase storage.
+  The sub also won't fire a nuke at a target with friendly units within 3 km
+  (`NuclearSafetyRadius`). Set `RespectNuclearRules = false` to skip escalation and the stockpile.
 - **Surface ASW.** Stock warships with sonar ping when a hostile sub is within 30 km, and they
   fire up to 6 ASW torpedoes at firm submarine contacts within 9 km. Without them a submerged
   boat would be invulnerable.
@@ -120,7 +132,8 @@ jumps across the thermocline. When it gets pinged it switches on mimicry and dro
 ### Sonar display (F8)
 
 A small plot in the bottom left shows what your sub's sonar believes, decoys and phantoms
-included. Ctrl+F8 cycles the range (10/30/60 km), and F9 picks the next boat.
+included. For an SSBN it also shows the warhead setting, the faction's stockpile, and whether
+the next launch will be nuclear, conventional, or held (and why). Ctrl+F8 cycles the range (10/30/60 km), and F9 picks the next boat.
 
 | Key | Order |
 |---|---|
@@ -130,6 +143,7 @@ included. Ctrl+F8 cycles the range (10/30/60 km), and F9 picks the next boat.
 | Delete | Decoy (noisemaker and repeater alternate) |
 | End | Acoustic mimicry |
 | Home | SSBN: climb to launch depth and fire at the best known target |
+| Backslash | SSBN: cycle warhead (conventional, nuclear, nuclear only) |
 | Pause | Active ping |
 
 In multiplayer, a client's orders go to the host, which checks the boat belongs to that player's
@@ -212,5 +226,10 @@ These are the places most likely to break on first contact with the real game:
   floats too high or too low, adjust `[Model] VerticalOffset`.
 - **Materials.** The model copies a lit material from the donor (the game uses URP). If the sub
   shows up pink or invisible, that lookup failed. Check the log.
+- **Nuclear missile detection.** The mod decides a missile is nuclear from its weapon info's
+  `nuclear` flag, found through the weapon mount that carries it. If the log says
+  `nuclear=none`, that lookup failed. Warheads are taken from airbase storage the same way
+  PlayableVehicles does it. If the stockpile also counts warheads somewhere else, the log warns
+  that no airbase had one to remove.
 - **Multiplayer messages.** The `SubNet` messages follow PlayableVehicles' working pattern, but
   nobody has run them in a real lobby yet.

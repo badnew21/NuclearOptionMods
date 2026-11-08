@@ -39,6 +39,9 @@ namespace Submarines
         internal static ConfigEntry<float> BallisticRange;
         internal static ConfigEntry<string> BallisticMissileKeys;
         internal static ConfigEntry<bool> BallisticAutoLaunch;
+        internal static ConfigEntry<string> BallisticWarhead;
+        internal static ConfigEntry<bool> RespectNuclearRules;
+        internal static ConfigEntry<float> NuclearSafetyRadius;
         internal static ConfigEntry<bool> SurfaceAsw;
         internal static ConfigEntry<int> SurfaceAswTorpedoes;
         internal static ConfigEntry<float> SurfaceAswRange;
@@ -64,6 +67,7 @@ namespace Submarines
         internal static ConfigEntry<KeyCode> MimicKey;
         internal static ConfigEntry<KeyCode> LaunchKey;
         internal static ConfigEntry<KeyCode> PingKey;
+        internal static ConfigEntry<KeyCode> WarheadKey;
         internal static ConfigEntry<bool> ShowTruth;
         internal static ConfigEntry<bool> VerboseLog;
 
@@ -108,9 +112,17 @@ namespace Submarines
             BallisticInterval = cfg.Bind("Weapons", "BallisticInterval", 45f, "Seconds between SLBM launches.");
             BallisticRange = cfg.Bind("Weapons", "BallisticRange", 150000f, "Max target distance for an SLBM (m).");
             BallisticMissileKeys = cfg.Bind("Weapons", "BallisticMissileKeys", "ballistic,tbm,srbm",
-                "Keywords used to pick the stock missile the SSBN fires. The log lists every missile on startup.");
+                "Keywords that mark stock missiles as SLBM candidates (over-the-horizon missiles count too). The mod picks a nuclear and a conventional one from them; the log shows which.");
             BallisticAutoLaunch = cfg.Bind("Weapons", "BallisticAutoLaunch", true,
                 "AI SSBNs launch at targets their faction knows about. Off = only on player command.");
+            BallisticWarhead = cfg.Bind("Weapons", "BallisticWarhead", "Nuclear",
+                "Default SLBM warhead for every SSBN. Nuclear = nuclear when release is authorised and warheads are available, " +
+                "otherwise conventional. NuclearOnly = nuclear or hold fire. Conventional = never nuclear. Players can change it per boat.");
+            RespectNuclearRules = cfg.Bind("Weapons", "RespectNuclearRules", true,
+                "Nuclear SLBMs follow the mission's escalation level (tactical/strategic) and draw one warhead each from the faction stockpile. " +
+                "Turn off to ignore both.");
+            NuclearSafetyRadius = cfg.Bind("Weapons", "NuclearSafetyRadius", 3000f,
+                "A nuclear SLBM is not fired at a target with friendly units within this radius (m). 0 = no check.");
             SurfaceAsw = cfg.Bind("Weapons", "SurfaceShipAsw", true,
                 "Warships with sonar launch ASW torpedoes at submarines they hold a firm contact on.");
             SurfaceAswTorpedoes = cfg.Bind("Weapons", "SurfaceShipAswTorpedoes", 6, "ASW torpedoes per surface warship.");
@@ -139,6 +151,7 @@ namespace Submarines
             MimicKey = cfg.Bind("UI", "MimicKey", KeyCode.End, "Engage acoustic mimicry.");
             LaunchKey = cfg.Bind("UI", "LaunchKey", KeyCode.Home, "SSBN: launch at the nearest known enemy target.");
             PingKey = cfg.Bind("UI", "PingKey", KeyCode.Pause, "Send an active sonar ping (reveals you).");
+            WarheadKey = cfg.Bind("UI", "WarheadKey", KeyCode.Backslash, "SSBN: cycle warhead (conventional / nuclear / nuclear only).");
             ShowTruth = cfg.Bind("UI", "ShowTruth", false, "Debug: mark false contacts on the display.");
             ModelVerticalOffset = cfg.Bind("Model", "VerticalOffset", 0f,
                 "Raise (+) or lower (-) the submarine model relative to the donor hull's waterline, if it floats too high or low when surfaced.");
