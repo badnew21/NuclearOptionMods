@@ -1,0 +1,19 @@
+Submarines for Nuclear Option - install
+=======================================
+
+You need BepInEx 5 (Windows x64) installed in Nuclear Option first.
+If you use a mod manager such as NOMM, it has already installed BepInEx for you.
+
+1. Close the game.
+2. Unzip this archive into your Nuclear Option game folder (the one with NuclearOption.exe).
+   You should end up with:
+       Nuclear Option\BepInEx\plugins\Submarines\Submarines.dll
+3. Start the game. The two subs appear in the mission editor's ship list.
+   BepInEx\LogOutput.log should contain "Registered Kestrel-class SSN".
+
+Settings are created on first launch in:
+    Nuclear Option\BepInEx\config\com.badnew21.submarines.cfg
+
+Multiplayer: every player in the lobby needs the same version of this mod.
+
+To uninstall, delete the BepInEx\plugins\Submarines folder.

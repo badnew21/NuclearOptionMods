@@ -30,7 +30,7 @@
     <Reference Include="UnityEngine.InputLegacyModule"><HintPath>$(ManagedDir)\UnityEngine.InputLegacyModule.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 
-  <Target Name="DeployToGame" AfterTargets="Build" Condition="'$(Configuration)' == 'Release' And '$(NuclearOptionRoot)' != ''">
+  <Target Name="DeployToGame" AfterTargets="Build" Condition="'$(Configuration)' == 'Release' And '$(NuclearOptionRoot)' != '' And '$(DeployToGame)' != 'false'">
     <Copy SourceFiles="$(OutputPath)Submarines.dll" DestinationFolder="$(NuclearOptionRoot)\BepInEx\plugins\Submarines" />
   </Target>
 </Project>
