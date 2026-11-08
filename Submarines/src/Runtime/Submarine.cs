@@ -63,6 +63,22 @@ namespace Submarines.Runtime
 
         internal float MimicLeft { get { return Mathf.Max(0f, _mimicUntil - Time.time); } }
 
+        /// <summary>Water depth under the boat (m), probed every 2 s on the machine that drives it.</summary>
+        internal float WaterDepth { get { return _waterDepth; } }
+
+        /// <summary>Deepest the hull origin may go here and still keep KeelClearance above the seabed.</summary>
+        internal float MaxDepthHere
+        {
+            get
+            {
+                float keel = Visual.SubVisual.PlanFor(Spec).KeelBelowOrigin - SubConfig.ModelVerticalOffset.Value;
+                return Mathf.Max(0f, _waterDepth - keel - SubConfig.KeelClearance.Value);
+            }
+        }
+
+        /// <summary>The ordered depth can't be reached because the water is too shallow.</summary>
+        internal bool DepthLimitedBySeabed { get { return OrderedDepth > MaxDepthHere + 0.5f; } }
+
         /// <summary>
         /// True on the machine that simulates this boat's physics: the server for AI boats, the
         /// pilot's machine for player boats.
@@ -443,8 +459,7 @@ namespace Submarines.Runtime
             float want;
             if (OwnsPhysics)
             {
-                float floor = Mathf.Max(0f, _waterDepth - SubConfig.BottomClearance.Value);
-                want = Mathf.Min(Mathf.Clamp(OrderedDepth, 0f, SubConfig.MaxDepth.Value), floor);
+                want = Mathf.Min(Mathf.Clamp(OrderedDepth, 0f, SubConfig.MaxDepth.Value), MaxDepthHere);
             }
             else
             {

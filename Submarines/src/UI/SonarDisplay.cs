@@ -32,14 +32,22 @@ namespace Submarines.UI
                 else
                     _visible = !_visible;
             }
-            if (!_visible)
-                return;
-
             CollectMine();
-            if (Mine.Count == 0)
+            Submarine s;
+            if (_visible)
+            {
+                s = Selected();
+            }
+            else
+            {
+                // Driving a sub yourself (BOTE): its keys work without the sonar screen open.
+                s = Piloted();
+                if (s == null)
+                    return;
+                IssueOrders(s);
                 return;
-            Submarine s = Selected();
-            if (s == null)
+            }
+            if (Mine.Count == 0 || s == null)
                 return;
 
             if (Input.GetKeyDown(SubConfig.NextSubKey.Value))
@@ -50,6 +58,11 @@ namespace Submarines.UI
                     _index = (_index + 1) % Mine.Count;
                 return;
             }
+            IssueOrders(s);
+        }
+
+        private static void IssueOrders(Submarine s)
+        {
             if (Input.GetKeyDown(SubConfig.DeeperKey.Value))
                 Say(SubCommands.Issue(s, SubOrder.Deeper));
             if (Input.GetKeyDown(SubConfig.ShallowerKey.Value))
@@ -113,15 +126,54 @@ namespace Submarines.UI
             }
         }
 
+        private static Submarine Piloted()
+        {
+            return _lastPiloted != null && _lastPiloted.Ship != null && !_lastPiloted.Ship.disabled ? _lastPiloted : null;
+        }
+
+        /// <summary>One-line depth readout at the top of the screen while you drive a sub.</summary>
+        private static void DrawPilotLine()
+        {
+            Submarine p = Piloted();
+            if (p == null)
+                return;
+            string state = p.Submerged ? (p.MastsExposed ? "PERISCOPE" : "SUBMERGED") : "SURFACED";
+            string line = p.Spec.UnitName + "   " + state + "   depth " + p.Depth.ToString("F0") + " m (ordered " +
+                          p.OrderedDepth.ToString("F0") + ")   water " +
+                          (p.WaterDepth >= 4999f ? "deep" : p.WaterDepth.ToString("F0") + " m");
+            string hint;
+            if (p.DepthLimitedBySeabed)
+                hint = p.MaxDepthHere < 1f
+                    ? "Too shallow to dive here: head for deeper water."
+                    : "Seabed limits depth here to " + p.MaxDepthHere.ToString("F0") + " m.";
+            else if (!p.Submerged && p.OrderedDepth < 1f)
+                hint = SubConfig.DeeperKey.Value + " to dive, " + SubConfig.ShallowerKey.Value + " to climb, " +
+                       SubConfig.DisplayKey.Value + " for sonar";
+            else
+                hint = string.Empty;
+            Rect r = new Rect(Screen.width * 0.5f - 300f, 8f, 600f, 44f);
+            Color old = GUI.color;
+            GUI.color = new Color(0f, 0f, 0f, 0.55f);
+            GUI.DrawTexture(r, _px);
+            GUI.color = p.DepthLimitedBySeabed ? new Color(1f, 0.75f, 0.3f) : new Color(0.4f, 1f, 0.6f);
+            GUI.Label(new Rect(r.x + 8f, r.y + 2f, r.width - 16f, 20f), line);
+            GUI.Label(new Rect(r.x + 8f, r.y + 21f, r.width - 16f, 20f), hint.Length > 0 ? hint :
+                (Time.unscaledTime < _msgUntil ? _msg : string.Empty));
+            GUI.color = old;
+        }
+
         internal static void Draw()
         {
-            if (!_visible)
-                return;
             if (_px == null)
             {
                 _px = new Texture2D(1, 1);
                 _px.SetPixel(0, 0, Color.white);
                 _px.Apply();
+            }
+            if (!_visible)
+            {
+                DrawPilotLine();
+                return;
             }
 
             CollectMine();

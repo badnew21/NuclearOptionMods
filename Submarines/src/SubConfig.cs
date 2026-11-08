@@ -17,7 +17,7 @@ namespace Submarines
         internal static ConfigEntry<float> PatrolDepth;
         internal static ConfigEntry<float> MaxDepth;
         internal static ConfigEntry<float> LaunchDepth;
-        internal static ConfigEntry<float> BottomClearance;
+        internal static ConfigEntry<float> KeelClearance;
         internal static ConfigEntry<float> VerticalSpeed;
 
         // Detection
@@ -97,7 +97,10 @@ namespace Submarines
             PatrolDepth = cfg.Bind("Depth", "PatrolDepth", 120f, "Default cruising depth (m).");
             MaxDepth = cfg.Bind("Depth", "MaxDepth", 300f, "Deepest commanded depth (m).");
             LaunchDepth = cfg.Bind("Depth", "LaunchDepth", 30f, "Depth the SSBN climbs to before launching.");
-            BottomClearance = cfg.Bind("Depth", "BottomClearance", 25f, "Keep at least this far above the seabed.");
+            // Replaces the old BottomClearance (25 m from the hull's centre), which stopped subs diving
+            // anywhere near the coast. New key so existing config files pick up the change.
+            KeelClearance = cfg.Bind("Depth", "KeelClearance", 6f,
+                "Keep the bottom of the hull at least this far (m) above the seabed.");
             VerticalSpeed = cfg.Bind("Depth", "VerticalSpeed", 4f, "Max dive/climb rate (m/s).");
 
             SubmergedThreshold = cfg.Bind("Detection", "SubmergedThreshold", 10f,

@@ -147,6 +147,9 @@ namespace Submarines.Visual
         };
 
         internal float Beam { get { return Radius * 2f; } }
+
+        /// <summary>How far the bottom of the hull sits below the unit's origin (its waterline).</summary>
+        internal float KeelBelowOrigin { get { return Radius - CenterY; } }
         internal float Height { get { return Radius * 2f + SailHeight; } }
     }
 
