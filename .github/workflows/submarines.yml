@@ -4,7 +4,8 @@ name: Submarines build
 # The game assemblies come from the free Nuclear Option dedicated server (Steam app 3930080,
 # anonymous login), the same approach other open-source Nuclear Option mods use in CI.
 #
-# Every push uploads a zip as a workflow artifact. Pushing a tag named submarines-v* also
+# Every branch build commits the DLL and zip to Submarines/release/ (pushes made with the
+# workflow token don't trigger another run) and uploads the zip as a workflow artifact. Pushing a tag named submarines-v* also
 # publishes a GitHub Release with that zip attached.
 
 on:
@@ -108,6 +109,24 @@ jobs:
           (cd "$out" && zip -qr "$GITHUB_WORKSPACE/Submarines-$ver.zip" .)
           echo "ver=$ver" >> "$GITHUB_OUTPUT"
           sha256sum Submarines/bin/Release/Submarines.dll
+
+      - name: Commit prebuilt DLL to the branch
+        if: github.ref_type == 'branch'
+        run: |
+          set -euo pipefail
+          mkdir -p Submarines/release
+          cp Submarines/bin/Release/Submarines.dll Submarines/release/Submarines.dll
+          cp "Submarines-${{ steps.pkg.outputs.ver }}.zip" Submarines/release/Submarines.zip
+          (cd Submarines/release && sha256sum Submarines.dll Submarines.zip > SHA256SUMS.txt)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Submarines/release
+          if git diff --cached --quiet; then
+            echo "Prebuilt DLL unchanged."
+          else
+            git commit -m "Submarines: prebuilt DLL ${{ steps.pkg.outputs.ver }} from ${GITHUB_SHA::7}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

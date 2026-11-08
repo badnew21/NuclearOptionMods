@@ -9,6 +9,7 @@
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Deterministic>true</Deterministic>
     <ManagedDir>$(NuclearOptionRoot)\NuclearOption_Data\Managed</ManagedDir>
     <BepInExCore>$(NuclearOptionRoot)\BepInEx\core</BepInExCore>
   </PropertyGroup>
