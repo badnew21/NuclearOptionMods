@@ -11,12 +11,10 @@ Both show up in the mission editor's ship list like any stock ship.
 
 ![Kestrel and Leviathan models](docs/preview.png)
 
-> **Status: untested in game.** I wrote this without a copy of the game, so it has never been
-> loaded into Nuclear Option. The game API calls come from other open source NO mods (MK-88
-> Hydra, MK-65 Crosswim, Blueprinter, PlayableVehicles, DetectionDisable), and the code
-> type-checks against stubs of that API (`tools/check.sh`). Expect a round of fixing the first
-> time it meets the real `Assembly-CSharp.dll`. The "Known risks" section below lists the likely
-> problems.
+> **Status: compiles against the real game, not yet played.** GitHub Actions builds the DLL
+> against the game's own `Assembly-CSharp.dll` (from the free dedicated server), so every game
+> API the mod calls exists with the right signature. Nobody has loaded it into a match yet,
+> though. The "Known risks" section below lists what's most likely to need tuning.
 
 ## How it works
 
@@ -172,14 +170,28 @@ a disconnect for them.
 
 ## Install
 
-1. Install BepInEx 5 (x64) into the Nuclear Option folder.
-2. Build (below) and put `Submarines.dll` in `BepInEx/plugins/Submarines/`.
-3. Launch once. Check `BepInEx/LogOutput.log` for `Registered Kestrel-class SSN` and look at
-   the ship and missile list it prints.
+You don't need to build anything. A ready-made build lives in [`release/`](release/).
+
+1. Install BepInEx 5 (Windows x64) in Nuclear Option. If you use a mod manager like NOMM, it
+   has already done this.
+2. Download [`release/Submarines.zip`](release/Submarines.zip) and unzip it into the game folder
+   (the one with `NuclearOption.exe`). You should end up with
+   `BepInEx\plugins\Submarines\Submarines.dll`.
+   If you'd rather do it by hand, download [`release/Submarines.dll`](release/Submarines.dll)
+   and put it in that same folder.
+3. Launch once. Check `BepInEx/LogOutput.log` for `Registered Kestrel-class SSN`, and look at the
+   ship and missile list it prints.
 4. Tune `BepInEx/config/com.badnew21.submarines.cfg` if you want to (donor hulls, missile
    keywords, depths, ranges, damage, keys).
 
-## Build
+`release/SHA256SUMS.txt` has checksums for both files. The DLL is rebuilt by CI
+(`.github/workflows/submarines.yml`) whenever the source changes, against whatever game version
+Steam currently serves. If a game update breaks the mod, re-running that workflow produces a
+fresh build.
+
+## Build from source
+
+Only needed if you're changing the code.
 
 ```bash
 cp Directory.Build.props.template Directory.Build.props
